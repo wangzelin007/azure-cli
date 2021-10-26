@@ -1323,13 +1323,16 @@ def open_vm_port(cmd, resource_group_name, vm_name, port, priority=900, network_
     return network.network_security_groups.get(resource_group_name, nsg_name)
 
 
-def resize_vm(cmd, resource_group_name, vm_name, size, no_wait=False):
+def resize_vm(cmd, resource_group_name, vm_name, size, ephemeral_os_disk_placement=None, no_wait=False):
     vm = get_vm_to_update(cmd, resource_group_name, vm_name)
     if vm.hardware_profile.vm_size == size:
         logger.warning("VM is already %s", size)
         return None
 
     vm.hardware_profile.vm_size = size  # pylint: disable=no-member
+    if ephemeral_os_disk_placement is not None:
+        # TODO if not os_disk.diff_disk_settings.placement
+        vm.storage_profile.os_disk.diff_disk_settings.placement = ephemeral_os_disk_placement
     return set_vm(cmd, vm, no_wait=no_wait)
 
 
@@ -1374,7 +1377,8 @@ def update_vm(cmd, resource_group_name, vm_name, os_disk=None, disk_caching=None
               write_accelerator=None, license_type=None, no_wait=False, ultra_ssd_enabled=None,
               priority=None, max_price=None, proximity_placement_group=None, workspace=None, enable_secure_boot=None,
               enable_vtpm=None, user_data=None, capacity_reservation_group=None,
-              dedicated_host=None, dedicated_host_group=None, **kwargs):
+              dedicated_host=None, dedicated_host_group=None, size=None, ephemeral_os_disk_placement=None,
+              **kwargs):
     from msrestazure.tools import parse_resource_id, resource_id, is_valid_resource_id
     from ._vm_utils import update_write_accelerator_settings, update_disk_caching
     vm = kwargs['parameters']
@@ -1469,6 +1473,23 @@ def update_vm(cmd, resource_group_name, vm_name, os_disk=None, disk_caching=None
     aux_subscriptions = None
     if vm and vm.storage_profile and vm.storage_profile.image_reference and 'id' in vm.storage_profile.image_reference:
         aux_subscriptions = _parse_aux_subscriptions(vm.storage_profile.image_reference['id'])
+
+    if size is not None:
+        if vm.hardware_profile.vm_size == size:
+            logger.warning("VM is already %s", size)
+        else:
+            vm.hardware_profile.vm_size = size
+
+    if ephemeral_os_disk_placement is not None:
+        # if vm.hardware_profile.vm_size == size:
+        #     raise ValidationError('--size should be different from the former value.')
+        if vm.storage_profile.os_disk.diff_disk_settings is not None:
+            vm.storage_profile.os_disk.diff_disk_settings.placement = ephemeral_os_disk_placement
+        else:
+            raise ValidationError('should update from --ephemeral-os-disk true vm.')
+            # DiffDiskSettings = cmd.get_models('DiffDiskSettings')
+            # vm.storage_profile.os_disk.diff_disk_settings = DiffDiskSettings(option='Local', placement=ephemeral_os_disk_placement)
+
     client = _compute_client_factory(cmd.cli_ctx, aux_subscriptions=aux_subscriptions)
     return sdk_no_wait(no_wait, client.virtual_machines.begin_create_or_update, resource_group_name, vm_name, **kwargs)
 # endregion
@@ -3084,6 +3105,7 @@ def update_vmss(cmd, resource_group_name, name, license_type=None, no_wait=False
                 max_unhealthy_instance_percent=None, max_unhealthy_upgraded_instance_percent=None,
                 pause_time_between_batches=None, enable_cross_zone_upgrade=None, prioritize_unhealthy_instances=None,
                 user_data=None, enable_spot_restore=None, spot_restore_timeout=None, capacity_reservation_group=None,
+                vm_sku=None, ephemeral_os_disk_placement=None,
                 **kwargs):
     vmss = kwargs['parameters']
     aux_subscriptions = None
@@ -3209,6 +3231,22 @@ def update_vmss(cmd, resource_group_name, name, license_type=None, no_wait=False
             vmss.upgrade_policy.rolling_upgrade_policy.pause_time_between_batches = pause_time_between_batches
             vmss.upgrade_policy.rolling_upgrade_policy.enable_cross_zone_upgrade = enable_cross_zone_upgrade
             vmss.upgrade_policy.rolling_upgrade_policy.prioritize_unhealthy_instances = prioritize_unhealthy_instances
+
+    if vm_sku is not None:
+        if vmss.sku.name == vm_sku:
+            logger.warning("VM is already %s", vm_sku)
+        else:
+            vmss.sku.name = vm_sku
+
+    if ephemeral_os_disk_placement is not None:
+        # if vmss.sku.name == vm_sku:
+        #     raise ValidationError('--vm-sku should be different from the former value.')
+        if vmss.virtual_machine_profile.storage_profile.os_disk.diff_disk_settings is not None:
+            vmss.virtual_machine_profile.storage_profile.os_disk.diff_disk_settings.placement = ephemeral_os_disk_placement
+        else:
+            raise ValidationError('should update from --ephemeral-os-disk true vmss.')
+            # DiffDiskSettings = cmd.get_models('DiffDiskSettings')
+            # vmss.virtual_machine_profile.storage_profile.os_disk.diff_disk_settings = DiffDiskSettings(option='Local', placement=ephemeral_os_disk_placement)
 
     return sdk_no_wait(no_wait, client.virtual_machine_scale_sets.begin_create_or_update,
                        resource_group_name, name, **kwargs)

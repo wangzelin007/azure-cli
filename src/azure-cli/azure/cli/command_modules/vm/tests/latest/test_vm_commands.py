@@ -16,6 +16,7 @@ import uuid
 from azure.cli.testsdk.exceptions import JMESPathCheckAssertionError
 from knack.util import CLIError
 from azure_devtools.scenario_tests import AllowLargeResponse, record_only, live_only
+from azure.cli.core.azclierror import ArgumentUsageError, ValidationError
 from azure.cli.core.profiles import ResourceType
 from azure.cli.testsdk import (
     ScenarioTest, ResourceGroupPreparer, LiveScenarioTest, api_version_constraint,
@@ -972,6 +973,33 @@ class VMCreateAndStateModificationsScenarioTest(ScenarioTest):
         self.cmd('vm create -g {rg} -n vm --image Win2019Datacenter --admin-username AzureUser --admin-password testPassword0 --nsg-rule NONE')
         self.cmd('vm user update -g {rg} -n vm --username AzureUser --password testPassword1')
 
+    @ResourceGroupPreparer(name_prefix='cli_test_vm_resize_placement')
+    def test_vm_resize_placement(self, resource_group):
+
+        self.kwargs.update({
+            'loc': 'eastus',
+            'base': 'base',
+            'image': 'UbuntuLTS',
+            # 'nsg': 'mynsg',
+            # 'ip': 'mypubip',
+            # 'sa': self.create_random_name('clistorage', 15),
+            # 'vnet': 'myvnet',
+            'placement1': 'ResourceDisk',
+        })
+
+        # base
+        self.cmd('vm create -n {base} -g {rg} --image {image} --size Standard_DS4_v2 --location {loc} --ephemeral-os-disk')
+
+        # resize with placement
+        self.cmd('vm resize -g {rg} -n {base} --size Standard_DS5_v2 --ephemeral-os-disk-placement {placement1}',
+                 checks=self.check('hardwareProfile.vmSize', 'Standard_DS5_v2'))
+        self.cmd('vm show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            # self.check('storageProfile.osDisk.caching', 'ReadOnly'),
+            self.check('storageProfile.osDisk.diffDiskSettings.option', 'Local'),
+            self.check('storageProfile.osDisk.diffDiskSettings.placement', 'ResourceDisk'),
+        ])
+
 
 class VMSimulateEvictionScenarioTest(ScenarioTest):
 
@@ -1303,6 +1331,115 @@ class VMCreateEphemeralOsDisk(ScenarioTest):
             self.check('osProfile.computerName', '{vm_2}'),  # check that --computer-name defaults to --name here.
         ])
 
+
+class VMUpdateTests(ScenarioTest):
+
+    @ResourceGroupPreparer(name_prefix='cli_test_vm_update_size_', location='westus2')
+    def test_vm_update_size(self, resource_group, resource_group_location):
+        self.kwargs.update({
+            'base': 'cli-test-vm-local-base',
+            'base2': 'cli-test-vm-local-base2',
+            'image': 'UbuntuLTS',
+            'loc': resource_group_location,
+            'size': 'Standard_DS5_v2',
+        })
+
+        # check base
+        self.cmd('vm create -n {base} -g {rg} --image {image} --size Standard_DS4_v2 --location {loc}')
+        self.cmd('vm show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+        ])
+
+        # check that we can update a vm to another size.
+        # self.cmd('vm update --resource-group {rg} --name {base} --size {size}')
+        self.cmd('vm update --resource-group {rg} --name {base} --size {size} --set tags.tagName=tagValue')
+        self.cmd('vm show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('hardwareProfile.vmSize', '{size}'),
+            self.check('tags.tagName', 'tagValue'),
+        ])
+
+        # check not modify size value
+        # self.cmd('vm update --resource-group {rg} --name {base} --size {size}')
+        self.cmd('vm update --resource-group {rg} --name {base} --size {size} --set tags.tagName=tagValue')
+        self.cmd('vm show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('hardwareProfile.vmSize', '{size}'),
+            self.check('tags.tagName', 'tagValue'),
+        ])
+
+        # check create with default size
+        self.cmd('vm create -n {base2} -g {rg} --image {image}  --location {loc}')
+        self.cmd('vm show -g {rg} -n {base2}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+        ])
+
+        # check that we can update a vm from default size.
+        self.cmd('vm update --resource-group {rg} --name {base2} --size {size}')
+        self.cmd('vm show -g {rg} -n {base2}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('hardwareProfile.vmSize', '{size}'),
+        ])
+
+    @ResourceGroupPreparer(name_prefix='cli_test_vm_update_ephemeral_os_disk_placement_', location='westus2')
+    def test_vm_update_ephemeral_os_disk_placement(self, resource_group, resource_group_location):
+        self.kwargs.update({
+            'vm1': 'cli-test-vm-local-vm1',
+            'vm2': 'cli-test-vm-local-vm2',
+            'image': 'UbuntuLTS',
+            'ssh_key': TEST_SSH_KEY_PUB,
+            'loc': resource_group_location,
+            'user': 'user_1',
+            'placement1': 'ResourceDisk',
+            'placement2': 'CacheDisk',
+            'size1': 'Standard_DS5_v2',
+            'size2': 'Standard_DS4_v2',
+        })
+
+        # check create base1
+        self.cmd('vm create -n {vm1} -g {rg} --image {image} --size Standard_DS4_v2 --location {loc} --ephemeral-os-disk')
+        self.cmd('vm show -g {rg} -n {vm1}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('storageProfile.osDisk.diffDiskSettings.placement', 'CacheDisk'),
+        ])
+
+        # check usage error
+        message = 'usage error: --ephemeral-os-disk-placement is only configurable when --size is specified.'
+        with self.assertRaisesRegexp(ArgumentUsageError, message):
+            self.cmd('vm update --resource-group {rg} --name {vm1} --ephemeral-os-disk-placement {placement2}')
+
+        # check not modify size value
+        # message = '--size should be different from the former value.'
+        # with self.assertRaisesRegexp(ValidationError, message):
+        #     self.cmd('vm update --resource-group {rg} --name {vm1} --size {size2} --ephemeral-os-disk-placement {placement1}')
+
+        # check that we can update size1 and placement1.
+        self.cmd('vm update --resource-group {rg} --name {vm1} --size {size1} --ephemeral-os-disk-placement {placement1}')
+        self.cmd('vm show -g {rg} -n {vm1}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('storageProfile.osDisk.diffDiskSettings.option', 'Local'),
+            self.check('storageProfile.osDisk.diffDiskSettings.placement', 'ResourceDisk'),
+        ])
+
+        # check that we can update size2 and placement2.
+        self.cmd('vm update --resource-group {rg} --name {vm1} --size {size2} --ephemeral-os-disk-placement {placement2} --set tags.tagName=tagValue')
+        self.cmd('vm show -g {rg} -n {vm1}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('storageProfile.osDisk.diffDiskSettings.option', 'Local'),
+            self.check('storageProfile.osDisk.diffDiskSettings.placement', 'CacheDisk'),
+            self.check('tags.tagName', 'tagValue'),
+        ])
+
+        # check create base2 without ephemeral-os-disk
+        self.cmd('vm create -n {vm2} -g {rg} --image {image} --size Standard_DS4_v2 --location {loc}')
+        self.cmd('vm show -g {rg} -n {vm2}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+        ])
+
+        # check --ephemeral-os-disk false error
+        message = 'should update from --ephemeral-os-disk true vm.'
+        with self.assertRaisesRegexp(ValidationError, message):
+            self.cmd('vm update --resource-group {rg} --name {vm2} --size {size1} --ephemeral-os-disk-placement {placement1}')
 
 class VMMultiNicScenarioTest(ScenarioTest):  # pylint: disable=too-many-instance-attributes
 
@@ -2712,6 +2849,109 @@ class VMSSUpdateTests(ScenarioTest):
             self.check('tags.foo', 'bar')
         ])
 
+    @ResourceGroupPreparer(name_prefix='cli_test_vmss_update_vm_sku_', location='westus2')
+    def test_vmss_update_vm_sku(self, resource_group, resource_group_location):
+        self.kwargs.update({
+            'base': 'cli-test-vmss-local-base',
+            'base2': 'cli-test-vmss-local-base2',
+            'image': 'UbuntuLTS',
+            'vm_sku': 'Standard_DS5_v2',
+            'loc': resource_group_location,
+        })
+
+        # check base
+        self.cmd('vmss create -n {base} -g {rg} --image {image} --vm-sku Standard_DS4_v2')
+        self.cmd('vmss show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+        ])
+
+        # check that we can update vmss to another size.
+        self.cmd('vmss update --resource-group {rg} --name {base} --vm-sku {vm_sku} --set tags.tagName=tagValue')
+        self.cmd('vmss show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('sku.name', '{vm_sku}'),
+            self.check('tags.tagName', 'tagValue'),
+        ])
+
+        # check not modify size value
+        self.cmd('vmss update --resource-group {rg} --name {base} --vm-sku {vm_sku} --set tags.tagName=tagValue')
+        self.cmd('vmss show -g {rg} -n {base}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('sku.name', '{vm_sku}'),
+            self.check('tags.tagName', 'tagValue'),
+        ])
+
+        # check create with default size
+        self.cmd('vmss create -n {base2} -g {rg} --image {image}  --location {loc}')
+        self.cmd('vmss show -g {rg} -n {base2}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+        ])
+
+        # check that we can update a vmss from default size.
+        self.cmd('vmss update --resource-group {rg} --name {base2} --vm-sku {vm_sku}')
+        self.cmd('vmss show -g {rg} -n {base2}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('sku.name', '{vm_sku}'),
+        ])
+
+    @ResourceGroupPreparer(name_prefix='cli_test_vmss_update_ephemeral_os_disk_placement_', location='westus2')
+    def test_vmss_update_ephemeral_os_disk_placement(self, resource_group, resource_group_location):
+        self.kwargs.update({
+            'vm1': 'cli-test-vm-local-vm1',
+            'vm2': 'cli-test-vm-local-vm2',
+            'image': 'UbuntuLTS',
+            'placement1': 'ResourceDisk',
+            'placement2': 'CacheDisk',
+            'size1': 'Standard_DS5_v2',
+            'size2': 'Standard_DS4_v2',
+            'loc': resource_group_location,
+        })
+
+        # check create base1
+        self.cmd('vmss create -n {vm1} -g {rg} --image {image} --vm-sku Standard_DS4_v2 --ephemeral-os-disk')
+        self.cmd('vmss show -g {rg} -n {vm1}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('virtualMachineProfile.storageProfile.osDisk.diffDiskSettings.option', 'Local'),
+            self.check('virtualMachineProfile.storageProfile.osDisk.diffDiskSettings.placement', 'CacheDisk'),
+        ])
+
+        # check usage error
+        message = 'usage error: --ephemeral-os-disk-placement is only configurable when --vm-sku is specified.'
+        with self.assertRaisesRegexp(ArgumentUsageError, message):
+            self.cmd('vmss update --resource-group {rg} --name {vm1} --ephemeral-os-disk-placement {placement2}')
+
+        # check not modify size value
+        # message = '--vm-sku should be different from the former value.'
+        # with self.assertRaisesRegexp(ValidationError, message):
+        #     self.cmd('vmss update --resource-group {rg} --name {vm1} --vm-sku {size2} --ephemeral-os-disk-placement {placement1}')
+
+        # check that we can update size1 and placement1.
+        self.cmd('vmss update --resource-group {rg} --name {vm1} --vm-sku {size1} --ephemeral-os-disk-placement {placement1}')
+        self.cmd('vmss show -g {rg} -n {vm1}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('virtualMachineProfile.storageProfile.osDisk.diffDiskSettings.option', 'Local'),
+            self.check('virtualMachineProfile.storageProfile.osDisk.diffDiskSettings.placement', 'ResourceDisk'),
+        ])
+
+        # check that we can update size2 and placement2.
+        self.cmd('vmss update --resource-group {rg} --name {vm1} --vm-sku {size2} --ephemeral-os-disk-placement {placement2} --set tags.tagName=tagValue')
+        self.cmd('vmss show -g {rg} -n {vm1}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+            self.check('virtualMachineProfile.storageProfile.osDisk.diffDiskSettings.option', 'Local'),
+            self.check('virtualMachineProfile.storageProfile.osDisk.diffDiskSettings.placement', 'CacheDisk'),
+            self.check('tags.tagName', 'tagValue'),
+        ])
+
+        # check create base2 without ephemeral-os-disk
+        self.cmd('vmss create -n {vm2} -g {rg} --image {image} --vm-sku Standard_DS4_v2 --location {loc}')
+        self.cmd('vmss show -g {rg} -n {vm2}', checks=[
+            self.check('provisioningState', 'Succeeded'),
+        ])
+
+        # check --ephemeral-os-disk false error
+        message = 'should update from --ephemeral-os-disk true vmss.'
+        with self.assertRaisesRegexp(ValidationError, message):
+            self.cmd('vmss update --resource-group {rg} --name {vm2} --vm-sku {size1} --ephemeral-os-disk-placement {placement1}')
 
 class AcceleratedNetworkingTest(ScenarioTest):
 
