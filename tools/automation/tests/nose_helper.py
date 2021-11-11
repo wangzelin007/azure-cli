@@ -18,7 +18,8 @@ def get_nose_runner(parallel=True, process_timeout=600, process_restart=True):
             if process_restart:
                 arguments += ['--process-restartworker']
 
-        arguments.extend(test_folders)
+        arguments.append('D:\\code\\azure-cli\\src\\azure-cli\\azure\\cli\\command_modules\\vm\\tests\\latest\\test_custom_vm_commands.py')
+        print(arguments)
         result = nose.run(argv=arguments)
 
         return result

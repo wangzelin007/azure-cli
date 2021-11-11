@@ -9,6 +9,7 @@ import automation.verify
 import automation.style
 import automation.tests
 import automation.cli_linter
+import automation.coverage.run_command_coverage
 
 
 def main():
@@ -19,6 +20,8 @@ def main():
     automation.style.init_args(sub_parser)
     automation.tests.init_args(sub_parser)
     automation.cli_linter.init_args(sub_parser)
+    automation.coverage.run_command_coverage.init(sub_parser)
+    # automation.coverage.init_args(sub_parser)
 
     if sys.argv[1:]:
         args = parser.parse_args()

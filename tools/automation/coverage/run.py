@@ -8,9 +8,13 @@ import os
 import os.path
 import sys
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+
+
 import automation.tests.nose_helper as automation_tests
 import automation.utilities.path as automation_path
-from azure.cli.testsdk.vcr_test_base import COMMAND_COVERAGE_CONTROL_ENV
+# from azure.cli.testsdk.vcr_test_base import COMMAND_COVERAGE_CONTROL_ENV
 
 
 # pylint: disable=too-few-public-methods
@@ -21,7 +25,7 @@ class CommandCoverageContext(object):
         self._data_file_path = os.path.join(data_file_path, self.FILE_NAME)
 
     def __enter__(self):
-        os.environ[COMMAND_COVERAGE_CONTROL_ENV] = self._data_file_path
+        # os.environ[COMMAND_COVERAGE_CONTROL_ENV] = self._data_file_path
         automation_path.make_dirs(os.path.dirname(self.coverage_file_path))
         with open(self.coverage_file_path, 'w') as f:
             f.write('')
@@ -29,7 +33,8 @@ class CommandCoverageContext(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        del os.environ[COMMAND_COVERAGE_CONTROL_ENV]
+        pass
+        # del os.environ[COMMAND_COVERAGE_CONTROL_ENV]
 
     @property
     def coverage_file_path(self):
@@ -41,13 +46,15 @@ def run_command_coverage(modules):
     data_file = os.path.join(test_result_dir, 'cmdcov.data')
 
     # run tests to generate executed command list
-    run_nose = automation_tests.get_nose_runner(test_result_dir, parallel=False)
+    # run_nose = automation_tests.get_nose_runner(test_result_dir, parallel=False)
+    run_nose = automation_tests.get_nose_runner(parallel=False)
 
     with CommandCoverageContext(data_file) as context:
         for name, path in modules:
-            run_nose(name, path)
+            run_nose([path])
 
         print('BEGIN: Full executed commands list')
+        print(f'Path: {context.coverage_file_path}')
         for line in open(context.coverage_file_path):
             sys.stdout.write(line)
         print('END: Full executed commands list')
@@ -72,13 +79,14 @@ def run_code_coverage(modules):
     test_results_folder = automation_path.get_test_results_dir(with_timestamp=True, prefix='cover')
 
     # get test runner
-    run_nose = automation_tests.get_nose_runner(
-        test_results_folder, code_coverage=True, parallel=False)
+    # run_nose = automation_tests.get_nose_runner(test_results_folder, code_coverage=True, parallel=False)
+    run_nose = automation_tests.get_nose_runner(parallel=False)
 
     # run code coverage on each project
-    for name, _, test_path in modules:
-        with CoverageContext():
-            run_nose(name, test_path)
+    for name, test_path in modules:
+        # with CoverageContext():
+            # run_nose(name, test_path)
+        run_nose([test_path])
 
         import shutil
         shutil.move('.coverage', os.path.join(test_results_folder, '.coverage.{}'.format(name)))
@@ -130,9 +138,11 @@ def main():
         coverage_command_rundown(args.command_rundown)
         sys.exit(0)
 
+    # args.code_coverage = True
     if args.code_coverage:
         run_code_coverage(selected_modules)
 
+    # args.command_coverage = True
     if args.command_coverage:
         run_command_coverage(selected_modules)
 

@@ -9,6 +9,10 @@ import os
 import os.path
 import sys
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+
+
 import automation.tests.nose_helper as automation_tests
 import automation.utilities.path as automation_path
 
@@ -162,7 +166,8 @@ def run_command_coverage(args):
     all_commands = set(command_table.keys())
     command_summary = {}
 
-    commands_to_check = [x for x in all_commands if x.startswith(prefix)]
+    # commands_to_check = [x for x in all_commands if x.startswith(prefix)]
+    commands_to_check = all_commands
 
     for command in commands_to_check:
 
@@ -226,6 +231,16 @@ def run_command_coverage(args):
                 print(spacing_format.format(
                     mod, group, group_data['command_score'], group_data['param_score']))
 
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser('Code coverage tools')
+    args = parser.parse_args()
+    args.prefix = None
+    args.report = None
+    args.untested_params = None
+    args.projection = None
+    run_command_coverage(args)
 
 if __name__ == '__main__':
     main()
