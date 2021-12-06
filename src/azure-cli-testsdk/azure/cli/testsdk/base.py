@@ -165,6 +165,10 @@ class ScenarioTest(ReplayableTest, CheckerMixin, unittest.TestCase):
         return uuid.UUID(moniker)
 
     def cmd(self, command, checks=None, expect_failure=False):
+        with open(os.path.join('C:', os.sep, 'Users', 'zelinwang', '.azdev', 'tested_command.txt'), 'a') as f:
+            if command.startswith('az '):
+                command = command[3:]
+            f.write(command + '\n')
         command = self._apply_kwargs(command)
         return execute(self.cli_ctx, command, expect_failure=expect_failure).assert_with_checks(checks)
 
