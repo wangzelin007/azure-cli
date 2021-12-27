@@ -3843,3 +3843,9 @@ snapshot:
     architecture:
       rule_exclusions:
         - missing_parameter_coverage
+#vm user show:
+#  rule_exclusions:
+#    - missing_command_coverage
+#vm user test:
+#  rule_exclusions:
+#    - missing_command_coverage
