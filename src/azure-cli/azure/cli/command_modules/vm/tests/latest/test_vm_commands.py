@@ -3993,7 +3993,6 @@ class VMZoneScenarioTest(ScenarioTest):
             self.cmd('vm create -g {rg} -n vm1 --admin-username clitester --admin-password PasswordPassword1! --image debian --zone 1')
         except Exception as ex:
             self.assertTrue('does not support availability zones at location' in str(ex))
-            # self.assertTrue('availability zone is not yet supported' in str(ex))
 
     @unittest.skip('Can\'t test due to no qualified subscription')
     @ResourceGroupPreparer(name_prefix='cli_test_vmss_zones', location='eastus2')
