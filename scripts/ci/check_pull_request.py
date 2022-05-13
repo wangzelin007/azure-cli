@@ -90,7 +90,7 @@ def check_pull_request(title, body):
                 if ref and ref[0] not in ['Component Name 1', 'Component Name 2']:
                     is_edit_history_note = True
                     history_note_error_flag = regex_line(line) or history_note_error_flag
-		# If edit history notes, ignore title check result
+        # If edit history notes, ignore title check result
         error_flag = error_flag if not is_edit_history_note else history_note_error_flag
     elif title.startswith('{'):
         error_flag = False
@@ -114,6 +114,13 @@ def regex_line(line):
             try:
                 assert line[idx + 1] == ' '
             except:
+                # markdown [xxx](xxx)
+                if i == ']' and (idx + 1) < len(line) and line[idx+1] == '(':
+                    continue
+                # http:// and https://
+                if i == ':' and idx - 5 > 0:
+                    if line[idx-5:idx] == 'https' or line[idx-4:idx] == 'http':
+                        continue
                 logger.info('%s%s: missing space after %s', line, yellow, i)
                 logger.error(' ' * idx + '↑')
                 error_flag = True
