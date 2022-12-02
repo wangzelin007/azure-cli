@@ -1,0 +1,52 @@
+# Some content of this file is generated.
+
+trigger:
+  branches:
+    exclude:
+    - '*'
+
+variables:
+- template: ${{ variables.Pipeline.Workspace }}/.azure-pipelines/templates/variables.yml
+
+jobs:
+- job: getPythonVersion
+  displayName: "get Python Version"
+  pool:
+    name: 'pool-ubuntu-2004'
+  steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.10'
+      inputs:
+        versionSpec: '3.10'
+    - bash: |
+        #!/usr/bin/env bash
+        set -ev
+
+        echo "['3.8','3.9','3.10']" > python_version.txt
+        pythonVersion=`cat python_version.txt`
+        echo $pythonVersion
+        echo "##vso[task.setvariable variable=pythonVersion;isoutput=true]$pythonVersion"
+      name: CustomParas
+      displayName: 'get Python Version'
+      env:
+        ADO_PULL_REQUEST_LATEST_COMMIT: HEAD
+        ADO_PULL_REQUEST_TARGET_BRANCH: $(System.PullRequest.TargetBranch)
+
+- job: TestMatrix
+  displayName: Test Matrix
+  variables:
+    PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
+  condition: and(succeeded(), ne(variables.PythonVersion, 'false'))
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+    {% for version in versions %}
+      {{version}}:
+        python.version: {{version}}
+    {% endfor %}
+  pool:
+    name: ${{ variables.ubuntu_pool }}
+  steps:
+  - bash: |
+      #!/bin/bash
+      python -V
