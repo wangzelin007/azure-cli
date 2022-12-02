@@ -17,6 +17,7 @@ parameters:
     38: "3.8"
     39: "3.9"
     310: "3.10"
+    311: "3.11"
 
 jobs:
 - job: getPythonVersion
@@ -32,7 +33,7 @@ jobs:
         #!/usr/bin/env bash
         set -ev
 
-        echo "3.6 3.7 3.8 3.9" > python_version.txt
+        echo "3.6 3.7 3.8 3.9 3.10 3.11" > python_version.txt
         pythonVersion=`cat python_version.txt`
         echo $pythonVersion
         echo "##vso[task.setvariable variable=pythonVersion;isoutput=true]$pythonVersion"
