@@ -38,18 +38,17 @@ jobs:
     PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
   strategy:
     matrix:
-      python-version: [3.7, 3.8, 3.9, 3.10]
-  displayName: "test python ${{matrix.python-version}}"
+      python-version: ["3.7", "3.8", "3.9", "3.10"]
   pool:
     name: ${{ variables.ubuntu_pool }}
   timeoutInMinutes: 0
   steps:
     - task: UsePythonVersion@0
-      condition: and(succeeded(), contains(variables.PythonVersion, ${{matrix.python-version}}))
-      displayName: 'Use python ${{matrix.python-version}}'
+      condition: and(succeeded(), contains(variables.PythonVersion, ${{ matrix.python-version }}))
+      displayName: 'Use python ${{ matrix.python-version }}'
       inputs:
-        versionSpec: '${{matrix.python-version}}'
+        versionSpec: '${{ matrix.python-version }}'
     - bash: |
         #!/bin/bash
         python -V
-      condition: and(succeeded(), contains(variables.PythonVersion, ${{matrix.python-version}}))
+      condition: and(succeeded(), contains(variables.PythonVersion, ${{ matrix.python-version }}))
