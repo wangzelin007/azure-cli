@@ -26,7 +26,6 @@ jobs:
         pythonVersion=`cat python_version.txt`
         echo $pythonVersion
         echo "##vso[task.setvariable variable=pythonVersion;isoutput=true]$pythonVersion"
-
       name: CustomParas
       displayName: 'get Python Version'
       env:
@@ -34,12 +33,13 @@ jobs:
         ADO_PULL_REQUEST_TARGET_BRANCH: $(System.PullRequest.TargetBranch)
 
 - job: test36
-  pool:
-    name: ${{ variables.ubuntu_pool }}
-  displayName: "test 3.6"
+  dependsOn: getPythonVersion
   variables:
     PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
   condition: and(succeeded(), contains(variables.PythonVersion, '3.6'))
+  displayName: "test 3.6"
+  pool:
+    name: ${{ variables.ubuntu_pool }}
   timeoutInMinutes: 0
   steps:
     - task: UsePythonVersion@0
@@ -52,12 +52,13 @@ jobs:
         echo ${{ variables.PythonVersion }}
 
 - job: test310
-  pool:
-    name: ${{ variables.ubuntu_pool }}
-  displayName: "test 3.10"
+  dependsOn: getPythonVersion
   variables:
     PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
   condition: and(succeeded(), contains(variables.PythonVersion, '3.10'))
+  displayName: "test 3.10"
+  pool:
+    name: ${{ variables.ubuntu_pool }}
   timeoutInMinutes: 0
   steps:
     - task: UsePythonVersion@0
