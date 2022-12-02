@@ -40,10 +40,9 @@ jobs:
   timeoutInMinutes: 0
   strategy:
     matrix:
-    {% for version in variables.PythonVersion %}
-      {{version}}:
-        python.version: {{version}}
-    {% endfor %}
+      ${{ each version in variables.PythonVersion }}:
+        {{version}}:
+          python.version: {{version}}
   pool:
     name: ${{ variables.ubuntu_pool }}
   steps:
