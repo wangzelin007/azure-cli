@@ -49,12 +49,13 @@ jobs:
     PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
   condition: and(succeeded(), ne(variables.PythonVersion, 'false'))
   timeoutInMinutes: 0
-  strategy:
-    matrix:
-      ${{ each version in variables.PythonVersion }}:
-        ${{version}}:
-          python.version: ${{version}}
+#  strategy:
+#    matrix:
+#      ${{ each version in variables.PythonVersion }}:
+#        ${{version}}:
+#          python.version: ${{version}}
   steps:
     - bash: |
         #!/bin/bash
         python -V
+        echo ${{ variables.PythonVersion }}
