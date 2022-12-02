@@ -33,7 +33,7 @@ jobs:
         ADO_PULL_REQUEST_LATEST_COMMIT: HEAD
         ADO_PULL_REQUEST_TARGET_BRANCH: $(System.PullRequest.TargetBranch)
 
-- job: test3.6
+- job: test36
   pool:
     name: ${{ variables.ubuntu_pool }}
   displayName: "test 3.6"
@@ -51,7 +51,7 @@ jobs:
         python -V
         echo ${{ variables.PythonVersion }}
 
-- job: test3.10
+- job: test310
   pool:
     name: ${{ variables.ubuntu_pool }}
   displayName: "test 3.10"
