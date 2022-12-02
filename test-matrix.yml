@@ -49,13 +49,13 @@ jobs:
     variables:
       PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
     condition: and(succeeded(), contains(variables.PythonVersion, ${{version.value}}))
-    displayName: "test ${{version.value}}"
+    displayName: "test ${{version.key}}"
     pool:
       name: ${{ variables.ubuntu_pool }}
     timeoutInMinutes: 0
     steps:
       - task: UsePythonVersion@0
-        displayName: 'Use Python ${{version.value}}'
+        displayName: 'Use ${{version.key}}'
         inputs:
           versionSpec: '${{version.value}}'
       - bash: |
