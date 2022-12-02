@@ -33,6 +33,8 @@ jobs:
         ADO_PULL_REQUEST_TARGET_BRANCH: $(System.PullRequest.TargetBranch)
 
 - job: TestMatrix
+  pool:
+    name: ${{ variables.ubuntu_pool }}
   displayName: Test Matrix
   variables:
     PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
@@ -41,10 +43,8 @@ jobs:
   strategy:
     matrix:
       ${{ each version in variables.PythonVersion }}:
-        {{version}}:
-          python.version: {{version}}
-  pool:
-    name: ${{ variables.ubuntu_pool }}
+        ${{version}}:
+          python.version: ${{version}}
   steps:
     - bash: |
         #!/bin/bash
