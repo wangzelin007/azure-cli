@@ -60,4 +60,3 @@ jobs:
       - bash: |
           #!/bin/bash
           python -V
-          echo ${{ variables.PythonVersion }}
