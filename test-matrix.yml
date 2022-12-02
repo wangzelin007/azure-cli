@@ -39,16 +39,17 @@ jobs:
   strategy:
     matrix:
       python-version: [3.7, 3.8, 3.9, 3.10]
-  condition: and(succeeded(), contains(variables.PythonVersion, ${{matrix.python-version}}))
   displayName: "test python ${{matrix.python-version}}"
   pool:
     name: ${{ variables.ubuntu_pool }}
   timeoutInMinutes: 0
   steps:
     - task: UsePythonVersion@0
+      condition: and(succeeded(), contains(variables.PythonVersion, ${{matrix.python-version}}))
       displayName: 'Use python ${{matrix.python-version}}'
       inputs:
         versionSpec: '${{matrix.python-version}}'
     - bash: |
         #!/bin/bash
         python -V
+      condition: and(succeeded(), contains(variables.PythonVersion, ${{matrix.python-version}}))
