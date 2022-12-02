@@ -8,6 +8,16 @@ trigger:
 variables:
 - template: ${{ variables.Pipeline.Workspace }}/.azure-pipelines/templates/variables.yml
 
+parameters:
+- name: versions
+  type: object
+  default:
+    python36: "3.6"
+    python37: "3.7"
+    python38: "3.8"
+    python39: "3.9"
+    python311: "3.11"
+
 jobs:
 - job: getPythonVersion
   displayName: "get Python Version"
@@ -32,23 +42,39 @@ jobs:
         ADO_PULL_REQUEST_LATEST_COMMIT: HEAD
         ADO_PULL_REQUEST_TARGET_BRANCH: $(System.PullRequest.TargetBranch)
 
-- job: MinVersionTest
+- ${{each version in parameters.versions}}:
+  - job: test${{version.key}}
+    dependsOn: getPythonVersion
+    variables:
+      PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
+    condition: and(succeeded(), contains(variables.PythonVersion, ${{version.value}}))
+    displayName: "test ${{version.key}}"
+    pool:
+      name: ${{ variables.ubuntu_pool }}
+    timeoutInMinutes: 0
+    steps:
+      - task: UsePythonVersion@0
+        displayName: 'Use ${{version.key}}'
+        inputs:
+          versionSpec: '${{version.value}}'
+      - bash: |
+          #!/bin/bash
+          python -V
+
+- job: testpython310
   dependsOn: getPythonVersion
   variables:
     PythonVersion: $[ dependencies.getPythonVersion.outputs['CustomParas.pythonVersion'] ]
-  strategy:
-    matrix:
-      python-version: ["3.7", "3.8", "3.9", "3.10"]
+  condition: and(succeeded(), contains(variables.PythonVersion, '3.10'))
+  displayName: "test python310"
   pool:
     name: ${{ variables.ubuntu_pool }}
   timeoutInMinutes: 0
   steps:
     - task: UsePythonVersion@0
-      condition: and(succeeded(), contains(variables.PythonVersion, ${{ matrix.python-version }}))
-      displayName: 'Use python ${{ matrix.python-version }}'
+      displayName: 'Use python310'
       inputs:
-        versionSpec: '${{ matrix.python-version }}'
+        versionSpec: '3.10'
     - bash: |
         #!/bin/bash
         python -V
-      condition: and(succeeded(), contains(variables.PythonVersion, ${{ matrix.python-version }}))
