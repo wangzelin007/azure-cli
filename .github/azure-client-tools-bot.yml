@@ -2,10 +2,9 @@ pull_request:
   azure_pipeline:
     allow_list:
       - "wangzein007-azure-cli"
-    disallow_job_list: []
-    result_path: /test_results/
+    result_path: "/test_results/"
   comment:
-    level_keys:
+    group_by_keys:
       - "Module"
       - "Profile"
       - "PythonVersion"
