@@ -98,6 +98,7 @@ steps:
       fi
       echo $pipelineTestSerialXml
       echo "##vso[task.setvariable variable=pipelineTestSerialXml]$pipelineTestSerialXml"
+    condition: succeededOrFailed()
   - task: PublishBuildArtifacts@1
     condition: and(succeededOrFailed(), eq(variables.pipelineTestJson, 'true'))
     inputs:
