@@ -29,89 +29,87 @@ profile = sys.argv[3] if len(sys.argv) >= 4 else 'latest'
 serial_modules = sys.argv[4].split() if len(sys.argv) >= 5 else []
 fix_failure_tests = sys.argv[5].lower() == 'true' if len(sys.argv) >= 6 else False
 target = sys.argv[6].lower() if len(sys.argv) >= 7 else 'cli'
-working_directory = os.getenv('BUILD_SOURCESDIRECTORY') if target == 'cli' else f"{os.getenv('BUILD_SOURCESDIRECTORY')}/azure-cli-extensions"
+working_directory = os.getenv(
+    'BUILD_SOURCESDIRECTORY') if target == 'cli' else f"{os.getenv('BUILD_SOURCESDIRECTORY')}/azure-cli-extensions"
 azdev_test_result_dir = os.path.expanduser("~/.azdev/env_config/mnt/vss/_work/1/s/env")
 python_version = os.environ.get('PYTHON_VERSION')
 job_name = os.environ.get('JOB_NAME')
 unique_job_name = ' '.join([job_name, python_version, profile, str(instance_idx)])
-pull_request_id = os.environ.get('PULL_REQUEST_ID')
 pull_request_number = os.environ.get('PULL_REQUEST_NUMBER')
-logger.info(pull_request_id)
-logger.info(pull_request_number)
 cli_jobs = {
-            'acr': 45,
-            'acs': 62,
-            'advisor': 18,
-            'ams': 136,
-            'apim': 30,
-            'appconfig': 41,
-            'appservice': 150,  # series
-            # 'appservice': 157,  # parallel
-            'aro': 33,
-            'backup': 76,
-            'batch': 21,
-            'batchai': 24,
-            'billing': 21,
-            'botservice': 25,  # series
-            # 'botservice': 28,  # parallel
-            'cdn': 36,
-            'cloud': 18,  # series
-            # 'cloud': 22,  # parallel
-            'cognitiveservices': 24,
-            'config': 21,
-            'configure': 17,
-            'consumption': 21,
-            'container': 19,
-            'cosmosdb': 45,
-            'databoxedge': 25,
-            'dla': 19,
-            'dls': 22,
-            'dms': 22,
-            'eventgrid': 24,
-            'eventhubs': 24,
-            'extension': 0,
-            'feedback': 31,
-            'find': 22,
-            'hdinsight': 34,
-            'identity': 18,
-            'interactive': 18,
-            'iot': 57,
-            'keyvault': 39,
-            'kusto': 23,
-            'lab': 19,
-            'managedservices': 18,
-            'maps': 19,
-            'marketplaceordering': 18,
-            'monitor': 66,
-            'natgateway': 22,
-            'netappfiles': 48,
-            'network': 364,  # series
-            # 'network': 182,  # parallel
-            'policyinsights': 20,
-            'privatedns': 29,
-            'profile': 20,
-            'rdbms': 89,
-            'redis': 31,
-            'relay': 22,
-            'resource': 101,
-            'role': 38,
-            'search': 34,
-            'security': 23,
-            'servicebus': 24,
-            'serviceconnector': 56,
-            'servicefabric': 49,
-            'signalr': 20,
-            'sql': 117,
-            'sqlvm': 31,
-            'storage': 108,
-            'synapse': 45,
-            'util': 18,
-            'vm': 313,
-            'azure-cli': 16,
-            'azure-cli-core': 26,
-            'azure-cli-telemetry': 18,
-            'azure-cli-testsdk': 20,
-        }
+    'acr': 45,
+    'acs': 62,
+    'advisor': 18,
+    'ams': 136,
+    'apim': 30,
+    'appconfig': 41,
+    'appservice': 150,  # series
+    # 'appservice': 157,  # parallel
+    'aro': 33,
+    'backup': 76,
+    'batch': 21,
+    'batchai': 24,
+    'billing': 21,
+    'botservice': 25,  # series
+    # 'botservice': 28,  # parallel
+    'cdn': 36,
+    'cloud': 18,  # series
+    # 'cloud': 22,  # parallel
+    'cognitiveservices': 24,
+    'config': 21,
+    'configure': 17,
+    'consumption': 21,
+    'container': 19,
+    'cosmosdb': 45,
+    'databoxedge': 25,
+    'dla': 19,
+    'dls': 22,
+    'dms': 22,
+    'eventgrid': 24,
+    'eventhubs': 24,
+    'extension': 0,
+    'feedback': 31,
+    'find': 22,
+    'hdinsight': 34,
+    'identity': 18,
+    'interactive': 18,
+    'iot': 57,
+    'keyvault': 39,
+    'kusto': 23,
+    'lab': 19,
+    'managedservices': 18,
+    'maps': 19,
+    'marketplaceordering': 18,
+    'monitor': 66,
+    'natgateway': 22,
+    'netappfiles': 48,
+    'network': 364,  # series
+    # 'network': 182,  # parallel
+    'policyinsights': 20,
+    'privatedns': 29,
+    'profile': 20,
+    'rdbms': 89,
+    'redis': 31,
+    'relay': 22,
+    'resource': 101,
+    'role': 38,
+    'search': 34,
+    'security': 23,
+    'servicebus': 24,
+    'serviceconnector': 56,
+    'servicefabric': 49,
+    'signalr': 20,
+    'sql': 117,
+    'sqlvm': 31,
+    'storage': 108,
+    'synapse': 45,
+    'util': 18,
+    'vm': 313,
+    'azure-cli': 16,
+    'azure-cli-core': 26,
+    'azure-cli-telemetry': 18,
+    'azure-cli-testsdk': 20,
+}
 
 extension_jobs = {
     'account': 23,
@@ -340,9 +338,10 @@ def process_test(cmd, azdev_test_result_fp, live_rerun=False, modules=[]):
     if not os.path.exists(azdev_test_result_fp):
         logger.warning(f"{cmd} failed directly. The related module can't work!")
         if modules:
-            test_results_error_modules_fp = os.path.join(azdev_test_result_dir, f'test_results_error_modules_{instance_idx}.txt')
+            test_results_error_modules_fp = os.path.join(azdev_test_result_dir,
+                                                         f'test_results_error_modules_{instance_idx}.txt')
             with open(test_results_error_modules_fp, 'a') as fp:
-                fp.write(','.join(modules)+"\n")
+                fp.write(','.join(modules) + "\n")
         return error_flag
     # drop the original `--pytest-args` and add new arguments
     cmd = cmd[:-2] + ['--lf', '--live', '--pytest-args', '-o junit_family=xunit1']
@@ -352,7 +351,8 @@ def process_test(cmd, azdev_test_result_fp, live_rerun=False, modules=[]):
         failed_tests = get_failed_tests(azdev_test_result_fp)
         for (test, file) in failed_tests.items():
             git_restore(file)
-            test_results_failure_tests_fp = os.path.join(azdev_test_result_dir, f'test_results_failure_tests_{instance_idx}.txt')
+            test_results_failure_tests_fp = os.path.join(azdev_test_result_dir,
+                                                         f'test_results_failure_tests_{instance_idx}.txt')
             with open(test_results_failure_tests_fp, 'a') as fp:
                 fp.write(test + "\n")
 
@@ -379,23 +379,23 @@ def build_pipeline_result():
     selected_modules += ['core', 'telemetry']
     pipeline_result = {
         # "Automation Full Test Python310 Profile Latest instance1"
-        unique_job_name:
-            {
-                "Name": job_name,
-                "Details": [
-                    {
-                        "Profile": profile,
-                        "Details": [
-                            {
-                                "PythonVersion": python_version,
-                                "Details": []
-                            }
-                        ]
-                    }
-                ]
-            },
-        'pull_request_number': pull_request_number,
+        unique_job_name: {
+            "Name": job_name,
+            "Details": [
+                {
+                    "Profile": profile,
+                    "Details": [
+                        {
+                            "PythonVersion": python_version,
+                            "Details": []
+                        }
+                    ]
+                }
+            ]
+        }
     }
+    if pull_request_number != '$(System.PullRequest.PullRequestNumber)':
+        pipeline_result['pull_request_number'] = pull_request_number
 
     for k in selected_modules:
         pipeline_result[unique_job_name]['Details'][0]['Details'][0]['Details'].append({
@@ -567,15 +567,19 @@ class AutomaticScheduling(object):
                 parallel_tests.append(k)
         pipeline_result = build_pipeline_result()
         if serial_tests:
-            azdev_test_result_fp = os.path.join(azdev_test_result_dir, f"test_results_{python_version}_{profile}_{instance_idx}.serial.xml")
+            azdev_test_result_fp = os.path.join(azdev_test_result_dir,
+                                                f"test_results_{python_version}_{profile}_{instance_idx}.serial.xml")
             cmd = ['azdev', 'test', '--no-exitfirst', '--verbose', '--series'] + serial_tests + \
-                  ['--profile', f'{profile}', '--xml-path', azdev_test_result_fp, '--pytest-args', '-o junit_family=xunit1 --durations=10 --tb=no']
+                  ['--profile', f'{profile}', '--xml-path', azdev_test_result_fp, '--pytest-args',
+                   '-o junit_family=xunit1 --durations=10 --tb=no']
             serial_error_flag = process_test(cmd, azdev_test_result_fp, live_rerun=fix_failure_tests)
             pipeline_result = get_pipeline_result(azdev_test_result_fp, pipeline_result)
         if parallel_tests:
-            azdev_test_result_fp = os.path.join(azdev_test_result_dir, f"test_results_{python_version}_{profile}_{instance_idx}.parallel.xml")
+            azdev_test_result_fp = os.path.join(azdev_test_result_dir,
+                                                f"test_results_{python_version}_{profile}_{instance_idx}.parallel.xml")
             cmd = ['azdev', 'test', '--no-exitfirst', '--verbose'] + parallel_tests + \
-                  ['--profile', f'{profile}', '--xml-path', azdev_test_result_fp, '--pytest-args', '-o junit_family=xunit1 --durations=10 --tb=no']
+                  ['--profile', f'{profile}', '--xml-path', azdev_test_result_fp, '--pytest-args',
+                   '-o junit_family=xunit1 --durations=10 --tb=no']
             parallel_error_flag = process_test(cmd, azdev_test_result_fp, live_rerun=fix_failure_tests)
             pipeline_result = get_pipeline_result(azdev_test_result_fp, pipeline_result)
         save_pipeline_result(pipeline_result)

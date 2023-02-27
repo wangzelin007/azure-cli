@@ -75,7 +75,6 @@ steps:
       ADO_PULL_REQUEST_LATEST_COMMIT: $(System.PullRequest.TargetBranch)
       PYTHON_VERSION: ${{ parameters.pythonVersion }}
       JOB_NAME: ${{ parameters.jobName }}
-      PULL_REQUEST_ID: $(System.PullRequest.PullRequestId)
       PULL_REQUEST_NUMBER: $(System.PullRequest.PullRequestNumber)
   - bash: |
       pipelineTestJson='false'
@@ -125,7 +124,7 @@ steps:
       ArtifactName: 'test_results_xml'
       publishLocation: 'Container'
   - task: PublishTestResults@2
-    condition: and(succeededOrFailed(), eq(variables.pipelineTestXml, 'true'))
+    condition: and(succeededOrFailed(), or(eq(variables.pipelineTestParallelXml, 'true'), eq(variables.pipelineTestSerialXml, 'true')))
     inputs:
       testResultsFiles: '/$(HOME)/.azdev/env_config/mnt/vss/_work/1/s/env/test_results_*.xml'
       testRunTitle: 'CLI full test results of instance ${{ parameters.instance_idx }}'
