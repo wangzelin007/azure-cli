@@ -18,10 +18,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   steps:
-  - task: UsePythonVersion@0
-    displayName: 'Use Python 3.10'
-    inputs:
-      versionSpec: 3.10
   - bash: |
       echo "This build will fail intentionally"
       exit 0
@@ -30,6 +26,20 @@ jobs:
       echo "This build will fail intentionally"
       exit 0
     displayName: 'Task 2'
+
+- job: LastJob
+  dependsOn:
+    - ExampleJob1
+    - ExampleJob2
+  condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'Manual'))
+  displayName: Last Job
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - task: UsePythonVersion@0
+    displayName: 'Use Python 3.10'
+    inputs:
+      versionSpec: 3.10
   - task: AzureCLI@2
     inputs:
       azureSubscription: 'Azure CLI'
@@ -41,21 +51,8 @@ jobs:
         echo "If any task fails, notify to teams channel"
         python scripts/ci/notify_ci_errors.py $teams_api_url $teams_api_key
     displayName: 'Task 3'
-    continueOnError: true
-    condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'Manual'))
     env:
       BASE_URI: $(System.CollectionUri)
       PROJECT_TYPE: $(System.TeamProject)
       BUILD_ID: $(Build.BuildId)
       JOB_ID: $(System.JobId)
-#  - bash: |
-#      echo "If any task fails, notify to teams channel"
-#      python scripts/ci/notify_ci_errors.py
-#    displayName: 'Task 3'
-#    continueOnError: true
-#    condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
-#    env:
-#      BASE_URI: $(System.CollectionUri)
-#      PROJECT_TYPE: $(System.TeamProject)
-#      BUILD_ID: $(Build.BuildId)
-#      JOB_ID: $(System.JobId)
