@@ -1,0 +1,52 @@
+import logging
+import os
+import requests
+import sys
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+logger.addHandler(ch)
+
+
+teams_api_url = sys.argv[1]
+teams_api_key = sys.argv[2]
+# https://dev.azure.com/azclitools/
+base_uri = os.environ.get('BASE_URI', None)
+# public
+project_type = os.environ.get('PROJECT_TYPE', None)
+# 45514
+build_id = os.environ.get('BUILD_ID', None)
+# 15eab87b-4a33-5480-11eb-66f5d5b3681b
+job_id = os.environ.get('JOB_ID', None)
+
+
+def notify_batch_ci_errors():
+    if all(base_uri, project_type, build_id, job_id):
+        # https://dev.azure.com/azclitools/public/_build/results?buildId=45514&view=logs&j=15eab87b-4a33-5480-11eb-66f5d5b3681b
+        url = f'{base_uri}{project_type}/_build/results?buildId={build_id}&view=logs&j={job_id}'
+        teams_api_url = "https://teamsbotc755ffbot.azurewebsites.net/api/notification"
+
+        data = {
+            "title": "Batch CI Error Appears",
+            "body": "Azure cli team, please take a look at the batch CI error",
+            "notificationUrl": url,
+            "targetType": "channel",
+            "recipients": "19%3a9cb2650265684a8b9ba61253d551c49f%40thread.tacv2"
+        }
+        headers = {
+          'x-api-key': teams_api_key
+        }
+
+        response = requests.request("POST", teams_api_url, headers=headers, data=data)
+        logger.debug('Status Code:', response.status_code)
+        logger.debug('Response Content:', response.content)
+    else:
+        logger.error('Missing variables: '
+                     f'BASE_URI: {base_uri}, PROJECT_TYPE: {project_type}, BUILD_ID: {build_id}, JOB_ID: {job_id}')
+
+
+if __name__ == '__main__':
+    notify_batch_ci_errors()
