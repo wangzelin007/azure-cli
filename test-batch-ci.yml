@@ -4,20 +4,18 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   steps:
-  - task: Task1
+  - bash: |
+      echo "This build will fail intentionally"
+      exit 1
     displayName: 'Task 1'
-    bash: |
+  - bash: |
       echo "This build will fail intentionally"
       exit 1
-  - task: Task2
     displayName: 'Task 2'
-    bash: |
-      echo "This build will fail intentionally"
-      exit 1
-  - task: Task3
+  - bash: |
+      echo "This will run if any task fails"
+      exit 0
     displayName: 'Task 3'
     continueOnError: true
     condition: failed()
-    bash: |
-      echo "This will run if any task fails"
-      exit 0
+
