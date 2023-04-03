@@ -18,7 +18,7 @@ jobs:
     displayName: 'Task 2'
   - task: AzureCLI@2
     inputs:
-      azureSubscription: 'Azure CLI release'
+      azureSubscription: 'Azure CLI'
       scriptType: 'bash'
       scriptLocation: 'inlineScript'
       inlineScript: |
