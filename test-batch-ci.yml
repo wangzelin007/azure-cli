@@ -14,11 +14,15 @@ jobs:
     displayName: 'Task 2'
   - bash: |
       echo "This will run if any task fails"
+      # public
       echo $(System.TeamProject)
+      # id
       echo $(Build.BuildId)
-      echo $(Agent.JobStatus.JobId)
-      echo $(System.TaskDefinitionsUrl)
+      # https://dev.azure.com/azclitools/
       echo $(System.TeamFoundationCollectionUri)
+      echo $(System.CollectionUri)
+      echo $(System.JobId)
+      echo $(System.TimelineId)
       exit 0
     displayName: 'Task 3'
     continueOnError: true
