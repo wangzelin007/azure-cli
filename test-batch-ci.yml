@@ -31,5 +31,5 @@ jobs:
       exit 0
     displayName: 'Task 3'
     continueOnError: true
-    condition: failed()
+    condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
 
