@@ -20,7 +20,7 @@ jobs:
   steps:
   - bash: |
       echo "This build will fail intentionally"
-      exit 0
+      exit 1
     displayName: 'Task 1'
   - bash: |
       echo "This build will fail intentionally"
