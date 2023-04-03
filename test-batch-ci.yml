@@ -1,6 +1,20 @@
 jobs:
-- job: ExampleJob
-  displayName: Example Job
+- job: ExampleJob1
+  displayName: Example Job1
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - bash: |
+      echo "This build will fail intentionally"
+      exit 0
+    displayName: 'Task 1.1'
+  - bash: |
+      echo "This build will fail intentionally"
+      exit 1
+    displayName: 'Task 1.2'
+
+- job: ExampleJob2
+  displayName: Example Job2
   pool:
     vmImage: 'ubuntu-latest'
   steps:
@@ -10,7 +24,7 @@ jobs:
       versionSpec: 3.10
   - bash: |
       echo "This build will fail intentionally"
-      exit 1
+      exit 0
     displayName: 'Task 1'
   - bash: |
       echo "This build will fail intentionally"
@@ -28,7 +42,7 @@ jobs:
         python scripts/ci/notify_ci_errors.py $teams_api_url $teams_api_key
     displayName: 'Task 3'
     continueOnError: true
-    condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
+    condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'Manual'))
     env:
       BASE_URI: $(System.CollectionUri)
       PROJECT_TYPE: $(System.TeamProject)
