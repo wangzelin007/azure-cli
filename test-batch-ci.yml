@@ -10,7 +10,7 @@ jobs:
     displayName: 'Task 1'
   - bash: |
       echo "This build will fail intentionally"
-      exit 1
+      exit 0
     displayName: 'Task 2'
   - bash: |
       echo "This will run if any task fails"
