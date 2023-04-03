@@ -6,7 +6,7 @@ jobs:
   steps:
   - bash: |
       echo "This build will fail intentionally"
-      exit 0
+      exit 1
     displayName: 'Task 1'
   - bash: |
       echo "This build will fail intentionally"
@@ -14,6 +14,11 @@ jobs:
     displayName: 'Task 2'
   - bash: |
       echo "This will run if any task fails"
+      echo $(System.TeamProject)
+      echo $(Build.BuildId)
+      echo $(Agent.JobStatus.JobId)
+      echo $(System.TaskDefinitionsUrl)
+      echo $(System.TeamFoundationCollectionUri)
       exit 0
     displayName: 'Task 3'
     continueOnError: true
