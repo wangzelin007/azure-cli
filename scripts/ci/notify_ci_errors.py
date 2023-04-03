@@ -30,8 +30,8 @@ def notify_batch_ci_errors():
         teams_api_url = "https://teamsbotc755ffbot.azurewebsites.net/api/notification"
 
         data = {
-            "title": "Batch CI Error Appears",
-            "body": "Azure cli team, please take a look at the batch CI error",
+            "title": "Batch CI Error Appears!",
+            "body": "Azure cli team, please take a look at the batch CI error.",
             "notificationUrl": url,
             "targetType": "channel",
             "recipients": "19%3a9cb2650265684a8b9ba61253d551c49f%40thread.tacv2"
@@ -44,8 +44,8 @@ def notify_batch_ci_errors():
         logger.debug('Status Code:', response.status_code)
         logger.debug('Response Content:', response.content)
     else:
-        logger.error('Missing variables: '
-                     f'BASE_URI: {base_uri}, PROJECT_TYPE: {project_type}, BUILD_ID: {build_id}, JOB_ID: {job_id}')
+        logger.error('Missing variables: \nBASE_URI: %s, PROJECT_TYPE: %s, '
+                     'BUILD_ID: %s, JOB_ID: %s', base_uri, project_type, build_id, job_id)
 
 
 if __name__ == '__main__':
