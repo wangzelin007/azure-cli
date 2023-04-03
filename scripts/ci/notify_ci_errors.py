@@ -41,8 +41,8 @@ def notify_batch_ci_errors():
         }
 
         response = requests.request("POST", teams_api_url, headers=headers, data=data)
-        logger.debug('Status Code:', response.status_code)
-        logger.debug('Response Content:', response.content)
+        logger.debug('Status Code: %s', response.status_code)
+        logger.debug('Response Content: %s', response.content)
     else:
         logger.error('Missing variables: \nBASE_URI: %s, PROJECT_TYPE: %s, '
                      'BUILD_ID: %s, JOB_ID: %s', base_uri, project_type, build_id, job_id)
