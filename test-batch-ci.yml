@@ -6,18 +6,18 @@ jobs:
   steps:
   - task: Task1
     displayName: 'Task 1'
-    script: |
+    bash: |
       echo "This build will fail intentionally"
       exit 1
   - task: Task2
     displayName: 'Task 2'
-    script: |
+    bash: |
       echo "This build will fail intentionally"
       exit 1
   - task: Task3
     displayName: 'Task 3'
     continueOnError: true
     condition: failed()
-    script: |
+    bash: |
       echo "This will run if any task fails"
       exit 0
