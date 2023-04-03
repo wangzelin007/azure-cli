@@ -14,15 +14,20 @@ jobs:
     displayName: 'Task 2'
   - bash: |
       echo "This will run if any task fails"
+      
       # public
       echo $(System.TeamProject)
-      # id
+      # 45514
       echo $(Build.BuildId)
       # https://dev.azure.com/azclitools/
-      echo $(System.TeamFoundationCollectionUri)
       echo $(System.CollectionUri)
+      # 15eab87b-4a33-5480-11eb-66f5d5b3681b
       echo $(System.JobId)
-      echo $(System.TimelineId)
+      
+      # https://dev.azure.com/azclitools/public/_build/results?buildId=45514&view=logs&j=15eab87b-4a33-5480-11eb-66f5d5b3681b
+      # use the variables above to construct the url
+      echo $(System.CollectionUri)/$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)&view=logs&j=$(System.JobId)
+      
       exit 0
     displayName: 'Task 3'
     continueOnError: true
