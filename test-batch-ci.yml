@@ -46,8 +46,9 @@ jobs:
       scriptType: 'bash'
       scriptLocation: 'inlineScript'
       inlineScript: |
-        teams_api_url = $(az keyvault secret show --vault-name kv-azuresdk --name azure-cli-teams-bot-api-url --query value -otsv)
-        teams_api_key = $(az keyvault secret show --vault-name kv-azuresdk --name azure-cli-teams-bot-api-key --query value -otsv)
+        pip install requests
+        teams_api_url=$(az keyvault secret show --vault-name kv-azuresdk --name azure-cli-teams-bot-api-url --query value -otsv)
+        teams_api_key=$(az keyvault secret show --vault-name kv-azuresdk --name azure-cli-teams-bot-api-key --query value -otsv)
         echo "If any task fails, notify to teams channel"
         python scripts/ci/notify_ci_errors.py $teams_api_url $teams_api_key
     displayName: 'Task 3'
