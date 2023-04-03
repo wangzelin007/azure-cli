@@ -31,7 +31,7 @@ jobs:
   dependsOn:
     - ExampleJob1
     - ExampleJob2
-  condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI', 'Manual'))
+  condition: and(failed(), in(variables['Build.Reason'], 'IndividualCI'))
   displayName: Last Job
   pool:
     vmImage: 'ubuntu-latest'
