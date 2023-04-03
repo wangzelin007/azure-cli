@@ -31,7 +31,7 @@ def notify_batch_ci_errors():
 
         data = {
             "title": "Batch CI Error Appears!",
-            "body": "Azure cli team, please take a look at the batch CI error.",
+            "body": "Azure cli team,\n\nPlease click to take a look at the batch CI error.",
             "notificationUrl": url,
             "targetType": "channel",
             "recipients": "19%3a9cb2650265684a8b9ba61253d551c49f%40thread.tacv2"
