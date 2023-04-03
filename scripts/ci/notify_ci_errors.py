@@ -14,17 +14,17 @@ logger.addHandler(ch)
 teams_api_url = sys.argv[1]
 teams_api_key = sys.argv[2]
 # https://dev.azure.com/azclitools/
-base_uri = os.environ.get('BASE_URI', None)
+base_uri = os.environ.get('BASE_URI', False)
 # public
-project_type = os.environ.get('PROJECT_TYPE', None)
+project_type = os.environ.get('PROJECT_TYPE', False)
 # 45514
-build_id = os.environ.get('BUILD_ID', None)
+build_id = os.environ.get('BUILD_ID', False)
 # 15eab87b-4a33-5480-11eb-66f5d5b3681b
-job_id = os.environ.get('JOB_ID', None)
+job_id = os.environ.get('JOB_ID', False)
 
 
 def notify_batch_ci_errors():
-    if all(base_uri, project_type, build_id, job_id):
+    if all([base_uri, project_type, build_id, job_id]):
         # https://dev.azure.com/azclitools/public/_build/results?buildId=45514&view=logs&j=15eab87b-4a33-5480-11eb-66f5d5b3681b
         url = f'{base_uri}{project_type}/_build/results?buildId={build_id}&view=logs&j={job_id}'
         teams_api_url = "https://teamsbotc755ffbot.azurewebsites.net/api/notification"
