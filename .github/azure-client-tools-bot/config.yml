@@ -6,7 +6,7 @@ pull_request:
   comment:
     - azure_pipeline:
         allow_list:
-          - "Azure.azure-cli Full Test"
+          - "wangzelin007.azure-cli Full Test"
         result_path: "/test_results/"
       group_by_keys:
         - "TestName"
