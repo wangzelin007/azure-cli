@@ -115,8 +115,8 @@ def get_pipeline_result():
                 }
                 status = 'Warning'
                 for item in items:
-                    if item['is_break'] == 'Yes':
-                        status = 'Fail'
+                    if item['is_break']:
+                        status = 'Failed'
                     breaking_change['Content'] = build_markdown_content(item['cmd_name'], item['is_break'], item['rule_message'], item['suggest_message'], breaking_change['Content'])
                 breaking_change['Status'] = status
                 pipeline_result['breaking_change_test 1']['Details'][0]['Details'].append(breaking_change)
