@@ -1,6 +1,13 @@
 {{#each this}}
 <details>
-<summary>{{renderStatus Status}}{{Module}}</summary>
-{{renderContent Content 0}}
+<summary>{{renderStatus Status}}{{TestName}}</summary>
+
+{{#each Items}}
+><details>
+> <summary>{{renderStatus Status}}{{Module}}</summary>
+>
+{{renderContent Content 1}}
+></details>
+{{/each}}
 </details>
 {{/each}}
