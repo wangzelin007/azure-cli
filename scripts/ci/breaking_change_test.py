@@ -21,7 +21,7 @@ logger.addHandler(ch)
 pull_request_number = os.environ.get('PULL_REQUEST_NUMBER', None)
 job_name = os.environ.get('JOB_NAME', None)
 azdev_test_result_dir = os.path.expanduser("~/.azdev/env_config/mnt/vss/_work/1/s/env")
-src_branch = 'azure-cli-2.48.1'
+src_branch = 'azure-cli-2.48.1-test'
 target_branch = 'dev'
 # src_branch = os.environ.get('SRC_BRANCH', None)
 # refs/remotes/pull/24765/merge
@@ -45,7 +45,7 @@ def get_diff_meta_files():
     print(cmd)
     subprocess.run(cmd)
     # refs/remotes/pull/24765/merge
-    cmd = ['azdev', 'command-change', 'meta-export', '--src', 'azure-cli-2.48.1', '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
+    cmd = ['azdev', 'command-change', 'meta-export', '--src', src_branch, '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
     print(cmd)
     subprocess.run(cmd)
 
