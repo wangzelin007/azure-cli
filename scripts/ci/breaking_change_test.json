@@ -3,6 +3,7 @@
         "Details": [
             {
                 "TestName": "AzureCLI-BreakingChangeTest",
+                "Status": "Succeeded",
                 "Details": [
                 ]
             }
