@@ -88,7 +88,7 @@ def meta_diff():
 
 def get_pipeline_result():
     pipeline_result = {
-        "breaking_change_check": {
+        "breaking_change_test": {
             "Name": job_name,
             "Details": []
         }
@@ -114,7 +114,7 @@ def get_pipeline_result():
                         status = 'Fail'
                     breaking_change['Content'] = build_markdown_content(item['cmd_name'], item['is_break'], item['rule_message'], item['suggest_message'], breaking_change['Content'])
                 breaking_change['Status'] = status
-                pipeline_result['breaking_change_check']['Details'].append(breaking_change)
+                pipeline_result['breaking_change_test']['Details'].append(breaking_change)
     print(json.dumps(pipeline_result, indent=4))
     return pipeline_result
 
@@ -128,8 +128,8 @@ def build_markdown_content(cmd_name, is_break, rule_message, suggest_message, co
 
 def save_pipeline_result(pipeline_result):
     # save pipeline result to file
-    # /mnt/vss/.azdev/env_config/mnt/vss/_work/1/s/env/breaking_change_check.json
-    filename = os.path.join(azdev_test_result_dir, f'breaking_change_check.json')
+    # /mnt/vss/.azdev/env_config/mnt/vss/_work/1/s/env/breaking_change_test.json
+    filename = os.path.join(azdev_test_result_dir, f'breaking_change_test.json')
     with open(filename, 'w') as f:
         json.dump(pipeline_result, f, indent=4)
     logger.info(f"save pipeline result to file: {filename}")
@@ -137,7 +137,7 @@ def save_pipeline_result(pipeline_result):
 
 def main():
     if pull_request_number != '$(System.PullRequest.PullRequestNumber)':
-        logger.info("Start breaking change check ...\n")
+        logger.info("Start breaking change test ...\n")
         get_diff_meta_files()
         get_base_meta_files()
         meta_diff()
