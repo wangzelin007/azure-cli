@@ -88,8 +88,7 @@ def meta_diff():
 
 def get_pipeline_result():
     pipeline_result = {
-        "breaking_change_test 1": {
-            "Name": job_name,
+        "breaking_change_test": {
             "Details": [
                 {
                     "TestName": "AzureCLI-BreakingChangeTest",
@@ -119,7 +118,7 @@ def get_pipeline_result():
                         status = 'Failed'
                     breaking_change['Content'] = build_markdown_content(item['cmd_name'], item['is_break'], item['rule_message'], item['suggest_message'], breaking_change['Content'])
                 breaking_change['Status'] = status
-                pipeline_result['breaking_change_test 1']['Details'][0]['Details'].append(breaking_change)
+                pipeline_result['breaking_change_test']['Details'][0]['Details'].append(breaking_change)
     print(json.dumps(pipeline_result, indent=4))
     return pipeline_result
 
@@ -127,6 +126,7 @@ def get_pipeline_result():
 def build_markdown_content(cmd_name, is_break, rule_message, suggest_message, content):
     if content == "":
         content = f'|is_break|cmd_name|rule_message|suggest_message|\n|---|---|---|---|\n'
+    is_break = '❌True' if is_break else '⚠️False'
     content += f'|{is_break}|{cmd_name}|{rule_message}|{suggest_message}|\n'
     return content
 
