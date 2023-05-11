@@ -88,9 +88,14 @@ def meta_diff():
 
 def get_pipeline_result():
     pipeline_result = {
-        "breaking_change_test": {
+        "breaking_change_test 1": {
             "Name": job_name,
-            "Details": []
+            "Details": [
+                {
+                    "TestName": "AzureCLI-BreakingChangeTest",
+                    "Details": []
+                }
+            ]
         }
     }
     if pull_request_number != '$(System.PullRequest.PullRequestNumber)':
@@ -114,7 +119,7 @@ def get_pipeline_result():
                         status = 'Fail'
                     breaking_change['Content'] = build_markdown_content(item['cmd_name'], item['is_break'], item['rule_message'], item['suggest_message'], breaking_change['Content'])
                 breaking_change['Status'] = status
-                pipeline_result['breaking_change_test']['Details'].append(breaking_change)
+                pipeline_result['breaking_change_test 1']['Details'][0]['Details'].append(breaking_change)
     print(json.dumps(pipeline_result, indent=4))
     return pipeline_result
 
