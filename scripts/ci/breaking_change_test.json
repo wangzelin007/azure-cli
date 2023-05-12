@@ -1,11 +1,14 @@
 {
-    "Status": "Succeeded",
     "breaking_change_test": {
         "Details": [
             {
                 "TestName": "AzureCLI-BreakingChangeTest",
-                "Status": "Succeeded",
                 "Details": [
+                    {
+                        "Module": "",
+                        "Status": "Succeeded",
+                        "Content": ""
+                    }
                 ]
             }
         ]
