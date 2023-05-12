@@ -113,16 +113,27 @@ def get_pipeline_result():
                     "Content": ""
                 }
                 status = 'Warning'
-                # sort
-                #
-                for item in items:
+                sorted_items = sorted(items, key=sort_by_content)
+                for item in sorted_items:
                     if item['is_break']:
                         status = 'Failed'
                     breaking_change['Content'] = build_markdown_content(item['cmd_name'], item['is_break'], item['rule_message'], item['suggest_message'], breaking_change['Content'])
                 breaking_change['Status'] = status
                 pipeline_result['breaking_change_test']['Details'][0]['Details'].append(breaking_change)
+    if not pipeline_result['breaking_change_test']['Details'][0]['Details']:
+        pipeline_result['breaking_change_test']['Details'][0]['Details'].append({
+            "Module": "Non Breaking Changes",
+            "Status": "Succeeded",
+            "Content": ""
+        })
     print(json.dumps(pipeline_result, indent=4))
     return pipeline_result
+
+
+def sort_by_content(item):
+    # Sort item by is_break, cmd_name and rule_message,
+    is_break = 0 if item['is_break'] else 1
+    return is_break, item['cmd_name'], item['rule_message']
 
 
 def build_markdown_content(cmd_name, is_break, rule_message, suggest_message, content):
