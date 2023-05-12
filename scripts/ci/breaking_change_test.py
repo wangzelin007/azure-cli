@@ -113,6 +113,8 @@ def get_pipeline_result():
                     "Content": ""
                 }
                 status = 'Warning'
+                # sort
+                #
                 for item in items:
                     if item['is_break']:
                         status = 'Failed'
