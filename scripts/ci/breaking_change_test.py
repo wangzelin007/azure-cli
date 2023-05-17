@@ -117,7 +117,7 @@ def get_pipeline_result():
                 for item in sorted_items:
                     if item['is_break']:
                         status = 'Failed'
-                    breaking_change['Content'] = build_markdown_content(item['cmd_name'], item['is_break'], item['rule_message'], item['suggest_message'], breaking_change['Content'])
+                    breaking_change['Content'] = build_markdown_content(item, breaking_change['Content'])
                 breaking_change['Status'] = status
                 pipeline_result['breaking_change_test']['Details'][0]['Details'].append(breaking_change)
     if not pipeline_result['breaking_change_test']['Details'][0]['Details']:
@@ -133,13 +133,17 @@ def get_pipeline_result():
 def sort_by_content(item):
     # Sort item by is_break, cmd_name and rule_message,
     is_break = 0 if item['is_break'] else 1
-    return is_break, item['cmd_name'], item['rule_message']
+    cmd_name = item['cmd_name'] if 'cmd_name' in item else item['subgroup_name']
+    return is_break, cmd_name, item['rule_message']
 
 
-def build_markdown_content(cmd_name, is_break, rule_message, suggest_message, content):
+def build_markdown_content(item, content):
     if content == "":
         content = f'|is_break|cmd_name|rule_message|suggest_message|\n|---|---|---|---|\n'
-    is_break = '❌True' if is_break else '⚠️False'
+    is_break = '❌True' if item['is_break'] else '⚠️False'
+    cmd_name = item['cmd_name'] if 'cmd_name' in item else item['subgroup_name']
+    rule_message = item['rule_message']
+    suggest_message = item['suggest_message']
     content += f'|{is_break}|{cmd_name}|{rule_message}|{suggest_message}|\n'
     return content
 
