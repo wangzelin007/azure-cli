@@ -23,13 +23,8 @@ job_name = os.environ.get('JOB_NAME', None)
 azdev_test_result_dir = os.path.expanduser("~/.azdev/env_config/mnt/vss/_work/1/s/env")
 # src_branch = 'azure-cli-2.48.1-test'
 # target_branch = 'dev'
-# src_branch = os.environ.get('SRC_BRANCH', None)
-# refs/remotes/pull/24765/merge
-# target_branch = f'refs/remotes/pull/{pull_request_number}/merge'
-PR_SRC_BRANCH = os.environ.get('PR_SRC_BRANCH', None)
-PR_TARGET_BRANCH = os.environ.get('PR_TARGET_BRANCH', None)
-print(f'PR_SRC_BRANCH: {PR_SRC_BRANCH}')
-print(f'PR_TARGET_BRANCH: {PR_TARGET_BRANCH}')
+src_branch = os.environ.get('PR_TARGET_BRANCH', None)
+target_branch = 'merged_pr'
 base_meta_path = '~/_work/1/base_meta'
 diff_meta_path = '~/_work/1/diff_meta'
 output_path = '~/_work/1/output_meta'
@@ -55,38 +50,15 @@ output_path = '~/_work/1/output_meta'
 
 
 def get_diff_meta_files():
-    cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-    print(cmd)
-    subprocess.run(cmd)
-    cmd = ['git', 'rev-parse', 'HEAD']
-    print(cmd)
-    out = subprocess.run(cmd, capture_output=True)
-    print(out.stdout)
-    cmd = ['git', 'checkout', 'dev']
-    print(cmd)
-    subprocess.run(cmd)
-    cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+    cmd = ['git', 'checkout', '-b', target_branch]
     print(cmd)
     subprocess.run(cmd)
     cmd = ['git', 'rev-parse', 'HEAD']
     print(cmd)
     subprocess.run(cmd)
-
-    # cmd = ['git', 'branch', '--show-current']
-    # print(cmd)
-    # subprocess.run(cmd)
-    # cmd = ['git', 'rev-parse', 'HEAD']
-    # print(cmd)
-    # subprocess.run(cmd)
-    # cmd = ['git', 'checkout', src_branch]
-    # print(cmd)
-    # subprocess.run(cmd)
-    # cmd = ['git', 'checkout', target_branch]
-    # print(cmd)
-    # subprocess.run(cmd)
-    # cmd = ['azdev', 'command-change', 'meta-export', '--src', 'dev', '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
-    # print(cmd)
-    # subprocess.run(cmd)
+    cmd = ['azdev', 'command-change', 'meta-export', '--src', src_branch, '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
+    print(cmd)
+    subprocess.run(cmd)
 
 
 def get_base_meta_files():
