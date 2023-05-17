@@ -21,45 +21,45 @@ logger.addHandler(ch)
 pull_request_number = os.environ.get('PULL_REQUEST_NUMBER', None)
 job_name = os.environ.get('JOB_NAME', None)
 azdev_test_result_dir = os.path.expanduser("~/.azdev/env_config/mnt/vss/_work/1/s/env")
-src_branch = 'azure-cli-2.48.1-test'
-target_branch = 'dev'
-# src_branch = os.environ.get('SRC_BRANCH', None)
+# src_branch = 'azure-cli-2.48.1-test'
+# target_branch = 'dev'
+src_branch = os.environ.get('SRC_BRANCH', None)
 # refs/remotes/pull/24765/merge
-# target_branch = f'refs/remotes/pull/{pull_request_number}/merge'
+target_branch = f'refs/remotes/pull/{pull_request_number}/merge'
 base_meta_path = '~/_work/1/base_meta'
 diff_meta_path = '~/_work/1/diff_meta'
 output_path = '~/_work/1/output_meta'
 
 
-def get_diff_meta_files():
-    cmd = ['git', 'fetch', '--all', '--tags', '--prune']
-    print(cmd)
-    subprocess.run(cmd)
-    cmd = ['git', 'checkout', src_branch]
-    print(cmd)
-    subprocess.run(cmd)
-    cmd = ['git', 'checkout', target_branch]
-    print(cmd)
-    subprocess.run(cmd)
-    cmd = ['azdev', 'setup', '--cli', get_cli_repo_path()]
-    print(cmd)
-    subprocess.run(cmd)
-    # refs/remotes/pull/24765/merge
-    cmd = ['azdev', 'command-change', 'meta-export', '--src', src_branch, '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
-    print(cmd)
-    subprocess.run(cmd)
-
-
 # def get_diff_meta_files():
+#     cmd = ['git', 'fetch', '--all', '--tags', '--prune']
+#     print(cmd)
+#     subprocess.run(cmd)
 #     cmd = ['git', 'checkout', src_branch]
 #     print(cmd)
 #     subprocess.run(cmd)
 #     cmd = ['git', 'checkout', target_branch]
 #     print(cmd)
 #     subprocess.run(cmd)
-#     cmd = ['azdev', 'command-change', 'meta-export', '--src', 'dev', '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
+#     cmd = ['azdev', 'setup', '--cli', get_cli_repo_path()]
 #     print(cmd)
 #     subprocess.run(cmd)
+#     # refs/remotes/pull/24765/merge
+#     cmd = ['azdev', 'command-change', 'meta-export', '--src', src_branch, '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
+#     print(cmd)
+#     subprocess.run(cmd)
+
+
+def get_diff_meta_files():
+    cmd = ['git', 'checkout', src_branch]
+    print(cmd)
+    subprocess.run(cmd)
+    cmd = ['git', 'checkout', target_branch]
+    print(cmd)
+    subprocess.run(cmd)
+    cmd = ['azdev', 'command-change', 'meta-export', '--src', 'dev', '--tgt', target_branch, '--repo', get_cli_repo_path(), '--meta-output-path', diff_meta_path]
+    print(cmd)
+    subprocess.run(cmd)
 
 
 def get_base_meta_files():
