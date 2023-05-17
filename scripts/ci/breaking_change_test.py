@@ -70,6 +70,7 @@ def get_diff_meta_files():
     cmd = ['git', 'rev-parse', 'HEAD']
     print(cmd)
     subprocess.run(cmd)
+
     # cmd = ['git', 'branch', '--show-current']
     # print(cmd)
     # subprocess.run(cmd)

@@ -17,6 +17,10 @@ jobs:
   pool:
     name: ${{ variables.ubuntu_pool }}
   steps:
+  - checkout: self
+    fetchDepth: 0
+    fetchTags: true
+    persistCredentials: true
   - task: UsePythonVersion@0
     displayName: 'Use Python 3.10'
     inputs:
