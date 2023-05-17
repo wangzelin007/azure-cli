@@ -53,6 +53,12 @@ def get_diff_meta_files():
     cmd = ['git', 'checkout', '-b', target_branch]
     print(cmd)
     subprocess.run(cmd)
+    cmd = ['git', 'checkout', src_branch]
+    print(cmd)
+    subprocess.run(cmd)
+    cmd = ['git', 'checkout', target_branch]
+    print(cmd)
+    subprocess.run(cmd)
     cmd = ['git', 'rev-parse', 'HEAD']
     print(cmd)
     subprocess.run(cmd)
