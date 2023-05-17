@@ -61,8 +61,7 @@ def get_diff_meta_files():
     cmd = ['git', 'rev-parse', 'HEAD']
     print(cmd)
     out = subprocess.run(cmd, capture_output=True)
-    commit_id = json.loads(out.stdout)
-    print(f'commit_id: {commit_id}')
+    print(out.stdout)
     cmd = ['git', 'checkout', 'dev']
     print(cmd)
     subprocess.run(cmd)
