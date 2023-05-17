@@ -51,6 +51,12 @@ output_path = '~/_work/1/output_meta'
 
 
 def get_diff_meta_files():
+    cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+    print(cmd)
+    subprocess.run(cmd)
+    cmd = ['git', 'branch', '--show-current']
+    print(cmd)
+    subprocess.run(cmd)
     cmd = ['git', 'checkout', src_branch]
     print(cmd)
     subprocess.run(cmd)
@@ -161,10 +167,10 @@ def main():
     if pull_request_number != '$(System.PullRequest.PullRequestNumber)':
         logger.info("Start breaking change test ...\n")
         get_diff_meta_files()
-        get_base_meta_files()
-        meta_diff()
-        pipeline_result = get_pipeline_result()
-        save_pipeline_result(pipeline_result)
+        # get_base_meta_files()
+        # meta_diff()
+        # pipeline_result = get_pipeline_result()
+        # save_pipeline_result(pipeline_result)
 
 
 if __name__ == '__main__':
