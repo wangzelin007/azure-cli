@@ -26,9 +26,9 @@ target_branch = 'dev'
 # src_branch = os.environ.get('SRC_BRANCH', None)
 # refs/remotes/pull/24765/merge
 # target_branch = f'refs/remotes/pull/{pull_request_number}/merge'
-base_meta_path = '/mnt/vss/_work/1/base_meta'
-diff_meta_path = '/mnt/vss/_work/1/diff_meta'
-output_path = '/mnt/vss/_work/1/output_meta'
+base_meta_path = '~/_work/1/base_meta'
+diff_meta_path = '~/_work/1/diff_meta'
+output_path = '~/_work/1/output_meta'
 
 
 def get_diff_meta_files():

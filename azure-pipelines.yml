@@ -202,7 +202,7 @@ jobs:
   - script: |
       set /p CLI_VERSION=<$(System.ArtifactsDirectory)/metadata/version
       set
-
+      
       build_scripts/windows/scripts/build.cmd
     displayName: 'Build Windows MSI'
 
@@ -251,7 +251,7 @@ jobs:
         }
         # The following are executed by elevated PowerShell
         az --version
-
+        
         $InstallArgs = @(
           "/i"
           "`"$env:SYSTEM_ARTIFACTSDIRECTORY\msi\Microsoft Azure CLI.msi`""
@@ -279,7 +279,7 @@ jobs:
         # Test bundled pip with extension installation
         az extension add -n rdbms-connect
         az self-test
-
+        
         Get-Content .\install_logs.txt
 
 - job: BuildDockerImage
@@ -352,13 +352,13 @@ jobs:
 
   - bash: |
       set -exv
-
+      
       CLI_VERSION=`cat $SYSTEM_ARTIFACTSDIRECTORY/metadata/version`
       IMAGE_NAME=clibuild$BUILD_BUILDNUMBER:latest
       TAR_FILE=$SYSTEM_ARTIFACTSDIRECTORY/docker/docker-azure-cli-$CLI_VERSION.tar
-
+      
       echo "== Test docker image =="
-
+      
       docker load < $TAR_FILE
       docker run $IMAGE_NAME /bin/bash -c "time az self-test && time az --version && sleep 5"
     displayName: 'Bash Script'
@@ -421,24 +421,24 @@ jobs:
 
   - bash: |
       #!/usr/bin/env bash
-
+      
       # Verify the pip wheels
-
+      
       set -ex
-
+      
       CLI_VERSION=`cat $BUILD_ARTIFACTSTAGINGDIRECTORY/metadata/version`
       PYPI_FILES=$(cd $BUILD_ARTIFACTSTAGINGDIRECTORY/pypi; pwd)
-
+      
       echo "== Testing pip install on Python 3.7 =="
       docker run \
         --rm -v $PYPI_FILES:/mnt/pypi python:3.7 \
         /bin/bash -c "ls /mnt/pypi && pip install -f /mnt/pypi -q azure-cli==$CLI_VERSION.* && az self-test && az --version && sleep 5"
-
+      
       echo "== Testing pip install on Python 3.9 =="
       docker run \
         --rm -v $PYPI_FILES:/mnt/pypi python:3.9 \
         /bin/bash -c "ls /mnt/pypi && pip install -f /mnt/pypi -q azure-cli==$CLI_VERSION.* && az self-test && az --version && sleep 5"
-
+      
       echo "== Testing pip install on Python 3.10 =="
       docker run \
         --rm -v $PYPI_FILES:/mnt/pypi python:3.10 \
@@ -541,17 +541,17 @@ jobs:
 
   - bash: |
       #!/bin/bash
-
+      
       root=$(cd $(dirname $0); pwd)
-
+      
       set -evx
-
+      
       CLI_VERSION=`cat $BUILD_ARTIFACTSTAGINGDIRECTORY/metadata/version`
       HOMEBREW_UPSTREAM_URL=`curl -Ls -o /dev/null -w %{url_effective} https://api.github.com/repos/Azure/azure-cli/tarball/$BUILD_SOURCEVERSION`
-
+      
       docker_files=$(cd $BUILD_SOURCESDIRECTORY/scripts/release/homebrew/docker; pwd)
       src_files=$(cd $BUILD_SOURCESDIRECTORY/src; pwd)
-
+      
       echo "Generating formula in docker container ... "
       docker run -v $docker_files:/mnt/scripts \
                  -v $src_files:/mnt/src \
@@ -560,10 +560,10 @@ jobs:
                  --name azurecli \
                  python:3.10 \
                  /mnt/scripts/run.sh
-
+      
       # clean up
       rm -rf $BUILD_ARTIFACTSTAGINGDIRECTORY/metadata
-
+      
       docker cp azurecli:azure-cli.rb $BUILD_ARTIFACTSTAGINGDIRECTORY/azure-cli.rb
       docker rm --force azurecli
     displayName: 'Build homebrew formula'
@@ -603,16 +603,16 @@ jobs:
 
   - bash: |
       set -ev
-
+      
       echo == Remove pre-installed azure-cli ==
       brew uninstall azure-cli
-
+      
       echo == Install azure-cli.rb formula ==
       brew install --build-from-source $SYSTEM_ARTIFACTSDIRECTORY/homebrew/azure-cli.rb
-
+      
       echo == Az Version ==
       az --version
-
+      
       echo == Run Self-Test ==
       az self-test
 
@@ -831,10 +831,10 @@ jobs:
 
   - bash: |
       set -ex
-
+      
       CLI_VERSION=`cat $SYSTEM_ARTIFACTSDIRECTORY/metadata/version`
       RPM_NAME=$(find $SYSTEM_ARTIFACTSDIRECTORY/rpm/ -type f -name "azure-cli-$CLI_VERSION-1.${DISTRO}.*.rpm" -printf '%f\n')
-
+      
       echo "== Test rpm package on ${IMAGE} =="
       docker pull $IMAGE
       docker run --rm -e RPM_NAME=$RPM_NAME -e PYTHON_PACKAGE=${PYTHON_PACKAGE} -e PYTHON_CMD=${PYTHON_CMD} -e PIP_CMD=${PIP_CMD} -v $SYSTEM_ARTIFACTSDIRECTORY/rpm:/mnt/rpm -v $(pwd):/azure-cli $IMAGE /bin/bash "/azure-cli/scripts/release/rpm/test_rpm_in_docker.sh"
@@ -959,7 +959,7 @@ jobs:
       script: |
         set -exv
         CLI_VERSION=`cat $SYSTEM_ARTIFACTSDIRECTORY/metadata/version`
-
+        
         echo "== Test debian package on ${DISTRO} =="
         docker pull ${DISTRO_BASE_IMAGE}
         docker run --rm -e DISTRO=${DISTRO} -e CLI_VERSION=$CLI_VERSION -v $SYSTEM_ARTIFACTSDIRECTORY/debian:/mnt/artifacts -v $(pwd):/azure-cli ${DISTRO_BASE_IMAGE} /bin/bash "/azure-cli/scripts/release/debian/test_deb_in_docker.sh"
