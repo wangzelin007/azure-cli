@@ -44,12 +44,14 @@ def _handle_error(error, ignore_errors):
 def _subprocess_communicate(command_parts, shell=False):
     from subprocess import PIPE, Popen, CalledProcessError
     output, stderr = "", ""
+    succeeded = False
 
     try:
         p = Popen(command_parts, stdout=PIPE, stderr=PIPE, shell=shell)
         output, stderr = p.communicate()
         output = output.decode('UTF-8').rstrip()
         stderr = stderr.decode('UTF-8').rstrip()
+        exit_code = p.returncode
     except CalledProcessError as e:
         stderr = str(e)
 
@@ -58,12 +60,16 @@ def _subprocess_communicate(command_parts, shell=False):
         warning = stderr
         stderr = None
 
+    if exit_code == 0:
+        succeeded = True
+        stderr = None
+
     if stderr:
         stderr = "Failed to run command '{}'. {}".format(
             ' '.join(command_parts),
             stderr
         )
-    return output, warning, stderr
+    return output, warning, stderr, succeeded
 
 
 # Checks for the environment
@@ -85,10 +91,10 @@ def _get_docker_status_and_version(ignore_errors, yes):
         logger.warning("Docker daemon status: available")
 
     # Docker version check
-    output, warning, stderr = _subprocess_communicate(
+    output, warning, stderr, succeeded = _subprocess_communicate(
         [docker_command, "version", "--format", "'Docker version {{.Server.Version}}, "
          "build {{.Server.GitCommit}}, platform {{.Server.Os}}/{{.Server.Arch}}'"])
-    if stderr:
+    if not succeeded:
         _handle_error(DOCKER_VERSION_ERROR.append_error_message(stderr), ignore_errors)
     else:
         if warning:
@@ -104,22 +110,18 @@ def _get_docker_status_and_version(ignore_errors, yes):
                 logger.warning("Skipping pull check.")
                 return
 
-        output, warning, stderr = _subprocess_communicate([docker_command, "pull", IMAGE])
+        output, warning, stderr, succeeded = _subprocess_communicate([docker_command, "pull", IMAGE])
 
-        if stderr:
-            if DOCKER_PULL_WRONG_PLATFORM in stderr:
+        if not succeeded:
+            if stderr and DOCKER_PULL_WRONG_PLATFORM in stderr:
                 print_pass("Docker pull of '{}'".format(IMAGE))
                 logger.warning("Image '%s' can be pulled but cannot be used on this platform", IMAGE)
-            else:
-                _handle_error(DOCKER_PULL_ERROR.append_error_message(stderr), ignore_errors)
+                return
+            _handle_error(DOCKER_PULL_ERROR.append_error_message(stderr), ignore_errors)
         else:
             if warning:
                 logger.warning(warning)
-            if output.find(DOCKER_PULL_SUCCEEDED.format(IMAGE)) != -1 or \
-               output.find(DOCKER_IMAGE_UP_TO_DATE.format(IMAGE)) != -1:
-                print_pass("Docker pull of '{}'".format(IMAGE))
-            else:
-                _handle_error(DOCKER_PULL_ERROR, ignore_errors)
+            print_pass("Docker pull of '{}'".format(IMAGE))
 
 
 # Get current CLI version
@@ -141,9 +143,9 @@ def _get_helm_version(ignore_errors):
         return
 
     # Helm version check
-    output, warning, stderr = _subprocess_communicate([helm_command, "version", "--client"])
+    output, warning, stderr, succeeded = _subprocess_communicate([helm_command, "version", "--client"])
 
-    if stderr:
+    if not succeeded:
         _handle_error(HELM_VERSION_ERROR.append_error_message(stderr), ignore_errors)
         return
 
@@ -178,9 +180,9 @@ def _get_notary_version(ignore_errors):
         return
 
     # Notary version check
-    output, warning, stderr = _subprocess_communicate([notary_command, "version"])
+    output, warning, stderr, succeeded = _subprocess_communicate([notary_command, "version"])
 
-    if stderr:
+    if not succeeded:
         _handle_error(NOTARY_VERSION_ERROR.append_error_message(stderr), ignore_errors)
         return
 
@@ -232,7 +234,7 @@ def _get_registry_status(login_server, registry_name, ignore_errors):
     try:
         request_url = 'https://' + login_server + '/v2/'
         logger.debug(add_timestamp("Sending a HTTP GET request to {}".format(request_url)))
-        challenge = requests.get(request_url, verify=(not should_disable_connection_verify()))
+        challenge = requests.get(request_url, verify=not should_disable_connection_verify())
     except SSLError:
         from ._errors import CONNECTIVITY_SSL_ERROR
         _handle_error(CONNECTIVITY_SSL_ERROR.format_error_message(login_server), ignore_errors)
@@ -330,10 +332,10 @@ def _check_registry_health(cmd, registry_name, ignore_errors):
                 if not valid_identity and registry.identity.user_assigned_identities:
                     for k, v in registry.identity.user_assigned_identities.items():
                         if v.client_id == client_id:
-                            from msrestazure.azure_exceptions import CloudError
+                            from azure.core.exceptions import HttpResponseError
                             try:
-                                valid_identity = (resolve_identity_client_id(cmd.cli_ctx, k) == client_id)
-                            except CloudError:
+                                valid_identity = resolve_identity_client_id(cmd.cli_ctx, k) == client_id
+                            except HttpResponseError:
                                 pass
             if not valid_identity:
                 from ._errors import CMK_MANAGED_IDENTITY_ERROR
@@ -342,7 +344,7 @@ def _check_registry_health(cmd, registry_name, ignore_errors):
 
 def _check_private_endpoint(cmd, registry_name, vnet_of_private_endpoint):  # pylint: disable=too-many-locals, too-many-statements
     import socket
-    from msrestazure.tools import parse_resource_id, is_valid_resource_id, resource_id
+    from azure.mgmt.core.tools import parse_resource_id, is_valid_resource_id, resource_id
 
     if registry_name is None:
         raise CLIError("Registry name must be provided to verify DNS routings of its private endpoints")
@@ -400,15 +402,15 @@ def _check_private_endpoint(cmd, registry_name, vnet_of_private_endpoint):  # py
                ' Please make sure you provided correct vnet')
         raise CLIError(err.format(registry_name, vnet_of_private_endpoint))
 
-    for fqdn in dns_mappings:
+    for k, v in dns_mappings.items():
         try:
-            result = socket.gethostbyname(fqdn)
-            if result != dns_mappings[fqdn]:
+            result = socket.gethostbyname(k)
+            if result != v:
                 err = 'DNS routing to registry "%s" through private IP is incorrect. Expect: %s, Actual: %s'
-                logger.warning(err, registry_name, dns_mappings[fqdn], result)
+                logger.warning(err, registry_name, v, result)
                 dns_ok = False
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning('Error resolving DNS for %s. Ex: %s', fqdn, e)
+            logger.warning('Error resolving DNS for %s. Ex: %s', k, e)
             dns_ok = False
 
     if dns_ok:

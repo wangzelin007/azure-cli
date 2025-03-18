@@ -10,6 +10,7 @@ from ipaddress import ip_network
 from azure.cli.command_modules.storage._client_factory import storage_client_factory, cf_sa_for_keys
 from azure.cli.core.util import get_file_json, shell_safe_json_parse, find_child_item, user_confirmation
 from azure.cli.core.profiles import ResourceType, get_sdk
+from ..aaz.latest.storage.account.migration._start import Start as _AccountMigrationStart
 from knack.log import get_logger
 from knack.util import CLIError
 
@@ -78,6 +79,17 @@ def create_storage_account(cmd, resource_group_name, account_name, sku=None, loc
         cmd.get_models('StorageAccountCreateParameters', 'Kind', 'Sku', 'CustomDomain', 'AccessTier', 'Identity',
                        'Encryption', 'NetworkRuleSet')
     scf = storage_client_factory(cmd.cli_ctx)
+
+    # check name availability and throw a warning if an account with the same name is found
+    # TODO throw error instead of just a warning during the next breaking change window
+    StorageAccountCheckNameAvailabilityParameters = cmd.get_models('StorageAccountCheckNameAvailabilityParameters')
+    account_name_param = StorageAccountCheckNameAvailabilityParameters(name=account_name,
+                                                                       type="Microsoft.Storage/storageAccounts")
+    name_is_available = scf.storage_accounts.check_name_availability(account_name_param)
+    if name_is_available and not name_is_available.name_available and name_is_available.reason == "AlreadyExists":
+        logger.warning("A storage account with the provided name %s is found. "
+                       "Will continue to update the existing account.", account_name)
+
     if kind is None:
         logger.warning("The default kind for created storage account will change to 'StorageV2' from 'Storage' "
                        "in the future")
@@ -192,7 +204,7 @@ def create_storage_account(cmd, resource_group_name, account_name, sku=None, loc
         if bypass and not default_action:
             raise CLIError('incorrect usage: --default-action ACTION [--bypass SERVICE ...]')
         if subnet:
-            from msrestazure.tools import is_valid_resource_id
+            from azure.mgmt.core.tools import is_valid_resource_id
             if not is_valid_resource_id(subnet):
                 raise CLIError("Expected fully qualified resource ID: got '{}'".format(subnet))
             VirtualNetworkRule = cmd.get_models('VirtualNetworkRule')
@@ -205,14 +217,22 @@ def create_storage_account(cmd, resource_group_name, account_name, sku=None, loc
     if encryption_key_type_for_table is not None or encryption_key_type_for_queue is not None:
         EncryptionServices = cmd.get_models('EncryptionServices')
         EncryptionService = cmd.get_models('EncryptionService')
-        params.encryption = Encryption()
-        params.encryption.services = EncryptionServices()
+        if params.encryption is None:
+            params.encryption = Encryption()
+        if params.encryption.services is None:
+            params.encryption.services = EncryptionServices()
         if encryption_key_type_for_table is not None:
             table_encryption_service = EncryptionService(enabled=True, key_type=encryption_key_type_for_table)
-            params.encryption.services.table = table_encryption_service
+            if isinstance(params.encryption.services, dict):
+                params.encryption.services["table"] = table_encryption_service
+            else:
+                params.encryption.services.table = table_encryption_service
         if encryption_key_type_for_queue is not None:
             queue_encryption_service = EncryptionService(enabled=True, key_type=encryption_key_type_for_queue)
-            params.encryption.services.queue = queue_encryption_service
+            if isinstance(params.encryption.services, dict):
+                params.encryption.services["queue"] = queue_encryption_service
+            else:
+                params.encryption.services.queue = queue_encryption_service
 
     if any([routing_choice, publish_microsoft_endpoints, publish_internet_endpoints]):
         RoutingPreference = cmd.get_models('RoutingPreference')
@@ -346,7 +366,7 @@ def show_storage_account_usage_no_location(cmd):
 
 def get_storage_account_properties(cli_ctx, account_id):
     scf = storage_client_factory(cli_ctx)
-    from msrestazure.tools import parse_resource_id
+    from azure.mgmt.core.tools import parse_resource_id
     result = parse_resource_id(account_id)
     return scf.storage_accounts.get_properties(result['resource_group'], result['name'])
 
@@ -367,10 +387,11 @@ def update_storage_account(cmd, instance, sku=None, tags=None, custom_domain=Non
                            sas_expiration_period=None, key_expiration_period_in_days=None,
                            allow_cross_tenant_replication=None, default_share_permission=None,
                            immutability_period_since_creation_in_days=None, immutability_policy_state=None,
-                           allow_protected_append_writes=None, public_network_access=None):
-    StorageAccountUpdateParameters, Sku, CustomDomain, AccessTier, Identity, Encryption, NetworkRuleSet = \
+                           allow_protected_append_writes=None, public_network_access=None, upgrade_to_storagev2=None,
+                           yes=None):
+    StorageAccountUpdateParameters, Sku, CustomDomain, AccessTier, Identity, Encryption, NetworkRuleSet, Kind = \
         cmd.get_models('StorageAccountUpdateParameters', 'Sku', 'CustomDomain', 'AccessTier', 'Identity', 'Encryption',
-                       'NetworkRuleSet')
+                       'NetworkRuleSet', 'Kind')
 
     domain = instance.custom_domain
     if custom_domain is not None:
@@ -406,6 +427,36 @@ def update_storage_account(cmd, instance, sku=None, tags=None, custom_domain=Non
     if encryption_key_version is not None:
         encryption.key_vault_properties.key_version = encryption_key_version
 
+    warning_message = None
+    if upgrade_to_storagev2:
+        if instance.kind == Kind.STORAGE:
+            warning_message = "Upgrading a General Purpose v1 storage account to a general-purpose v2 account is " \
+                              "free. You may specify the desired account tier during the upgrade process. " \
+                              "If an account tier is not specified on upgrade, the default account tier of the " \
+                              "upgraded account will be Hot. \nHowever, changing the storage access tier after the " \
+                              "upgrade may result in changes to your bill so it is recommended to specify the new " \
+                              "account tier during upgrade. \n" \
+                              "See (http://go.microsoft.com/fwlink/?LinkId=786482) to learn more."
+        elif instance.kind == Kind.BLOB_STORAGE:
+            warning_message = "Upgrading a BlobStorage account to a general-purpose v2 account is free as long as " \
+                              "the upgraded account's tier remains unchanged. If an account tier is not specified " \
+                              "on upgrade, the default account tier of the upgraded account will be Hot. \nIf there " \
+                              "are account access tier changes as part of the upgrade, there will be charges " \
+                              "associated with moving blobs as part of the account access tier change. \n" \
+                              "See (http://go.microsoft.com/fwlink/?LinkId=786482) to learn more."
+            if access_tier is None:
+                access_tier = AccessTier.HOT
+        elif access_tier is not None:
+            warning_message = "Changing the access tier may result in additional charges. \n" \
+                              "See (http://go.microsoft.com/fwlink/?LinkId=786482) to learn more."
+    else:
+        if access_tier is not None:
+            warning_message = "Changing the access tier may result in additional charges. \n" \
+                              "See (http://go.microsoft.com/fwlink/?LinkId=786482) to learn more."
+
+    if warning_message:
+        user_confirmation(warning_message, yes)
+
     params = StorageAccountUpdateParameters(
         sku=Sku(name=sku) if sku is not None else instance.sku,
         tags=tags if tags is not None else instance.tags,
@@ -414,6 +465,9 @@ def update_storage_account(cmd, instance, sku=None, tags=None, custom_domain=Non
         access_tier=AccessTier(access_tier) if access_tier is not None else instance.access_tier,
         enable_https_traffic_only=https_only if https_only is not None else instance.enable_https_traffic_only
     )
+
+    if upgrade_to_storagev2:
+        params.kind = Kind.STORAGE_V2
 
     if identity_type and 'UserAssigned' in identity_type and user_identity_id:
         user_assigned_identities = {user_identity_id: {}}
@@ -497,8 +551,8 @@ def update_storage_account(cmd, instance, sku=None, tags=None, custom_domain=Non
     if enable_files_adds is not None:
         ActiveDirectoryProperties = cmd.get_models('ActiveDirectoryProperties')
         if enable_files_adds:  # enable AD
-            if not(domain_name and net_bios_domain_name and forest_name and domain_guid and domain_sid and
-                   azure_storage_sid):
+            if not (domain_name and net_bios_domain_name and forest_name and domain_guid and domain_sid and
+                    azure_storage_sid):
                 raise CLIError("To enable ActiveDirectoryDomainServicesForFile, user must specify all of: "
                                "--domain-name, --net-bios-domain-name, --forest-name, --domain-guid, --domain-sid and "
                                "--azure_storage_sid arguments in Azure Active Directory Properties Argument group.")
@@ -636,7 +690,7 @@ def add_network_rule(cmd, client, resource_group_name, account_name, action='All
     if not subnet and not ip_address:
         logger.warning('No subnet or ip address supplied.')
     if subnet:
-        from msrestazure.tools import is_valid_resource_id
+        from azure.mgmt.core.tools import is_valid_resource_id
         if not is_valid_resource_id(subnet):
             raise CLIError("Expected fully qualified resource ID: got '{}'".format(subnet))
         VirtualNetworkRule = cmd.get_models('VirtualNetworkRule')
@@ -940,10 +994,11 @@ def create_or_policy(cmd, client, account_name, resource_group_name=None, proper
                                        object_replication_policy_id=policy_id, properties=or_policy)
     except HttpResponseError as ex:
         if ex.error.code == 'InvalidRequestPropertyValue' and policy_id == 'default':
-            from msrestazure.tools import parse_resource_id
+            from azure.mgmt.core.tools import parse_resource_id
             if account_name == parse_resource_id(or_policy.source_account)['name']:
                 raise CLIError('ValueError: Please specify --policy-id with auto-generated policy id value on '
                                'destination account.')
+        raise ex
 
 
 def update_or_policy(client, parameters, resource_group_name, account_name, object_replication_policy_id=None,
@@ -1118,3 +1173,50 @@ def begin_failover(client, resource_group_name, account_name, failover_type=None
         """
         user_confirmation(message, yes)
     return client.begin_failover(resource_group_name=resource_group_name, account_name=account_name, failover_type=failover_type, **kwargs)
+
+
+def list_blob_cors_rules(client, resource_group_name, account_name):
+    blob_service_properties = client.get_service_properties(resource_group_name=resource_group_name,
+                                                            account_name=account_name)
+    if not blob_service_properties.cors or not blob_service_properties.cors.cors_rules:
+        return []
+    return blob_service_properties.cors.cors_rules
+
+
+# pylint: disable=dangerous-default-value
+def add_blob_cors_rule(cmd, client, resource_group_name, account_name, max_age_in_seconds,
+                       allowed_origins, allowed_methods, allowed_headers=[], exposed_headers=[]):
+    CorsRules, CorsRule = cmd.get_models('CorsRules', 'CorsRule')
+    blob_service_properties = client.get_service_properties(resource_group_name=resource_group_name,
+                                                            account_name=account_name)
+    if not blob_service_properties.cors or not blob_service_properties.cors.cors_rules:
+        blob_service_properties.cors = CorsRules(cors_rules=[])
+
+    new_rule = CorsRule(allowed_origins=allowed_origins, allowed_methods=allowed_methods,
+                        allowed_headers=allowed_headers, exposed_headers=exposed_headers,
+                        max_age_in_seconds=max_age_in_seconds)
+    blob_service_properties.cors.cors_rules.append(new_rule)
+    return client.set_service_properties(resource_group_name=resource_group_name,
+                                         account_name=account_name,
+                                         parameters=blob_service_properties).cors.cors_rules
+
+
+def clear_blob_cors_rules(cmd, client, resource_group_name, account_name):
+    blob_service_properties = client.get_service_properties(resource_group_name=resource_group_name,
+                                                            account_name=account_name)
+    CorsRules = cmd.get_models('CorsRules')
+    blob_service_properties.cors = CorsRules(cors_rules=[])
+    client.set_service_properties(resource_group_name=resource_group_name,
+                                  account_name=account_name,
+                                  parameters=blob_service_properties)
+    return []
+
+
+class AccountMigrationStart(_AccountMigrationStart):
+    def pre_operations(self):
+        logger.warning('After your request to convert the account’s redundancy configuration is validated, the '
+                       'conversion will typically complete in a few days, but can take a few weeks depending on '
+                       'current resource demands in the region, account size, and other factors. The conversion can’t '
+                       'be stopped after being initiated, and for accounts with geo redundancy a failover can’t be '
+                       'initiated while conversion is in progress. The data within the storage account will continue '
+                       'to be accessible with no loss of durability or availability.')

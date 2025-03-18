@@ -13,12 +13,12 @@ from knack.util import CLIError
 
 from azure.cli.core.profiles import ResourceType
 
-from azure.cli.command_modules.vm._validators import (_validate_vm_vmss_create_vnet,
-                                                      _validate_vmss_create_subnet,
-                                                      _validate_vm_create_storage_account,
-                                                      _validate_vm_vmss_create_auth,
-                                                      _validate_vm_create_storage_profile,
-                                                      _validate_vmss_create_load_balancer_or_app_gateway)
+from azure.cli.command_modules.vm.azure_stack._validators import (_validate_vm_vmss_create_vnet,
+                                                                  _validate_vmss_create_subnet,
+                                                                  _validate_vm_create_storage_account,
+                                                                  _validate_vm_vmss_create_auth,
+                                                                  _validate_vm_create_storage_profile,
+                                                                  _validate_vmss_create_load_balancer_or_app_gateway)
 
 
 def _get_test_cmd():
@@ -172,7 +172,7 @@ class TestVMCreateDefaultVnet(unittest.TestCase):
         ns.location = None
         self.ns = ns
 
-    @mock.patch('azure.cli.command_modules.vm.aaz.2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_vnet)
+    @mock.patch('azure.cli.command_modules.vm.aaz.profile_2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_vnet)
     def test_no_matching_vnet(self):
         self._set_ns('emptyrg', 'eastus')
         _validate_vm_vmss_create_vnet(_get_test_cmd(), self.ns)
@@ -180,7 +180,7 @@ class TestVMCreateDefaultVnet(unittest.TestCase):
         self.assertIsNone(self.ns.subnet)
         self.assertEqual(self.ns.vnet_type, 'new')
 
-    @mock.patch('azure.cli.command_modules.vm.aaz.2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_vnet_location)
+    @mock.patch('azure.cli.command_modules.vm.aaz.profile_2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_vnet_location)
     def test_matching_vnet_specified_location(self):
         self._set_ns('rg1', 'eastus')
         _validate_vm_vmss_create_vnet(_get_test_cmd(), self.ns)
@@ -202,7 +202,7 @@ class TestVMSSCreateDefaultVnet(unittest.TestCase):
         ns.disable_overprovision = None
         return ns
 
-    @mock.patch('azure.cli.command_modules.vm.aaz.2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_vnet_location)
+    @mock.patch('azure.cli.command_modules.vm.aaz.profile_2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_vnet_location)
     def test_matching_vnet_subnet_size_matching(self):
         ns = TestVMSSCreateDefaultVnet._set_ns('rg1', 'eastus')
         ns.instance_count = 5
@@ -211,7 +211,7 @@ class TestVMSSCreateDefaultVnet(unittest.TestCase):
         self.assertEqual(ns.subnet, 'vnet1subnet')
         self.assertEqual(ns.vnet_type, 'existing')
 
-    @mock.patch('azure.cli.command_modules.vm.aaz.2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_subnet)
+    @mock.patch('azure.cli.command_modules.vm.aaz.profile_2020_09_01_hybrid.network.vnet.List', _mock_network_client_with_existing_subnet)
     def test_matching_vnet_no_subnet_size_matching(self):
         ns = TestVMSSCreateDefaultVnet._set_ns('rg1', 'eastus')
         ns.instance_count = 1000
@@ -265,7 +265,7 @@ class TestVMSSCreateDefaultVnet(unittest.TestCase):
 
 class TestVMCreateDefaultStorageAccount(unittest.TestCase):
     def __init__(self, methodName):
-        super(TestVMCreateDefaultStorageAccount, self).__init__(methodName)
+        super().__init__(methodName)
         self.ns = None
 
     def _set_ns(self, rg, location=None, tier='Standard'):
@@ -396,7 +396,7 @@ class TestVMDefaultAuthType(unittest.TestCase):
 
 
 class TestVMImageDefaults(unittest.TestCase):
-    @mock.patch('azure.cli.command_modules.vm._validators._compute_client_factory', autospec=True)
+    @mock.patch('azure.cli.command_modules.vm.azure_stack._validators._compute_client_factory', autospec=True)
     def test_vm_validator_retrieve_image_info_cross_subscription(self, factory_mock):
         ns = argparse.Namespace()
         cmd = mock.MagicMock()
@@ -424,7 +424,7 @@ class TestVMImageDefaults(unittest.TestCase):
         self.assertEqual(ns.os_type.value, 'someOS')
         self.assertTrue(0 in ns.disk_info)
 
-    @mock.patch('azure.cli.command_modules.vm._validators._compute_client_factory', autospec=True)
+    @mock.patch('azure.cli.command_modules.vm.azure_stack._validators._compute_client_factory', autospec=True)
     def test_vm_validator_enables_ultrassd_lrs(self, factory_mock):
         ns = argparse.Namespace()
         cmd = mock.MagicMock()

@@ -14,7 +14,7 @@ import argparse
 class AlertAddEncryption(argparse._AppendAction):
     def __call__(self, parser, namespace, values, option_string=None):
         action = self.get_action(values, option_string)
-        super(AlertAddEncryption, self).__call__(parser, namespace, action, option_string)
+        super().__call__(parser, namespace, action, option_string)
 
     def get_action(self, values, option_string):
         from azure.cli.core.azclierror import InvalidArgumentValueError
@@ -47,3 +47,85 @@ class AlertAddEncryption(argparse._AppendAction):
             keyVaultObject["user_assigned_identity"] = None
 
         return keyVaultObject
+
+
+class AlertAddVirtualNetwork(argparse._AppendAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+        action = self.get_action(values, option_string)
+        super().__call__(parser, namespace, action, option_string)
+
+    def get_action(self, values, option_string):  # pylint: disable=no-self-use
+        from azure.cli.core import CLIError
+        from azure.cli.core.azclierror import InvalidArgumentValueError
+        VirtualNetworkList = {}
+        for (k, v) in (x.split('=', 1) for x in values):
+            if k == 'id':
+                VirtualNetworkList["id"] = v
+            elif k == 'ignore-missing-endpoint':
+                if v == "true" or v == "True" or v == "TRUE":
+                    VirtualNetworkList["ignore_missing_endpoint"] = True
+                else:
+                    VirtualNetworkList["ignore_missing_endpoint"] = False
+            else:
+                raise InvalidArgumentValueError("Invalid Argument for:'{}' Only allowed arguments are 'id, ignore-missing-endpoint'".format(option_string))
+
+        if VirtualNetworkList["id"] is None:
+            raise CLIError('id is mandatory properties')
+
+        return VirtualNetworkList
+
+
+class AlertAddIpRule(argparse._AppendAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+        action = self.get_action(values, option_string)
+        super().__call__(parser, namespace, action, option_string)
+
+    def get_action(self, values, option_string):  # pylint: disable=no-self-use
+        from azure.cli.core import CLIError
+        from azure.cli.core.azclierror import InvalidArgumentValueError
+        IpRuleList = {}
+        for (k, v) in (x.split('=', 1) for x in values):
+            if k == 'ip-address':
+                IpRuleList["ip-address"] = v
+            elif k == 'action':
+                IpRuleList["action"] = v
+            else:
+                raise InvalidArgumentValueError(
+                    "Invalid Argument for:'{}' Only allowed arguments are 'ip-address, action'".format(option_string))
+
+        if IpRuleList["ip-address"] is None:
+            raise CLIError('ip-address is mandatory properties')
+
+        if "action" not in IpRuleList:
+            IpRuleList["action"] = 'Allow'
+        return IpRuleList
+
+
+class AlertAddlocation(argparse._AppendAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+        action = self.get_action(values, option_string)
+        super().__call__(parser, namespace, action, option_string)
+
+    def get_action(self, values, option_string):  # pylint: disable=no-self-use
+        from azure.cli.core import CLIError
+        from azure.cli.core.azclierror import InvalidArgumentValueError
+        LocationObject = {}
+        for (k, v) in (x.split('=', 1) for x in values):
+            if k == 'location-name':
+                LocationObject["location_name"] = v
+            elif k == 'role-type':
+                LocationObject["role_type"] = v
+            elif k == 'cluster-arm-id':
+                LocationObject["cluster_arm_id"] = v
+            else:
+                raise InvalidArgumentValueError(
+                    "Invalid Argument for:'{}' Only allowed arguments are 'location-name, role-type and cluster-arm-id'".format(
+                        option_string))
+
+        if (LocationObject["location_name"] is None) or (LocationObject["role_type"] is None):
+            raise CLIError('location-name and role-type are mandatory properties')
+
+        if "cluster_arm_id" not in LocationObject:
+            LocationObject["cluster_arm_id"] = ''
+
+        return LocationObject

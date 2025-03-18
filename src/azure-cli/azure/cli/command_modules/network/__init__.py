@@ -3,8 +3,6 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 # --------------------------------------------------------------------------------------------
 
-# pylint: disable=line-too-long
-
 from azure.cli.core import AzCommandsLoader
 from azure.cli.core.profiles import ResourceType
 
@@ -17,16 +15,20 @@ class NetworkCommandsLoader(AzCommandsLoader):
         from azure.cli.core import ModExtensionSuppress
         from azure.cli.core.commands import CliCommandType
         network_custom = CliCommandType(operations_tmpl='azure.cli.command_modules.network.custom#{}')
-        super(NetworkCommandsLoader, self).__init__(cli_ctx=cli_ctx,
-                                                    custom_command_type=network_custom,
-                                                    suppress_extension=[
-                                                        ModExtensionSuppress(__name__, 'dns', '0.0.2',
-                                                                             reason='These commands are now in the CLI.',
-                                                                             recommend_remove=True),
-                                                        ModExtensionSuppress(__name__, 'express-route', '0.1.3',
-                                                                             reason='These commands are now in the CLI.',
-                                                                             recommend_remove=True)
-                                                    ])
+        super().__init__(
+            cli_ctx=cli_ctx,
+            custom_command_type=network_custom,
+            suppress_extension=[
+                ModExtensionSuppress(
+                    __name__, 'dns', '0.0.2',
+                    reason='These commands are now in the CLI.',
+                    recommend_remove=True),
+                ModExtensionSuppress(
+                    __name__, 'express-route', '0.1.3',
+                    reason='These commands are now in the CLI.',
+                    recommend_remove=True)
+            ]
+        )
 
     def load_command_table(self, args):
         from azure.cli.command_modules.network.commands import load_command_table
@@ -106,7 +108,8 @@ class AzureStackNetworkCommandsLoader(AzCommandsLoader):
             profile.load_arguments(self, command)
 
     def get_module_name_by_profile(self, module_name):
-        profile_module_name = self.cli_ctx.cloud.profile.lower().replace('-', '_')
+        from azure.cli.core.aaz.utils import get_aaz_profile_module_name
+        profile_module_name = get_aaz_profile_module_name(profile_name=self.cli_ctx.cloud.profile)
         if module_name:
             return f'azure.cli.command_modules.network.azure_stack.{profile_module_name}.{module_name}'
         return f'azure.cli.command_modules.network.azure_stack.{profile_module_name}'

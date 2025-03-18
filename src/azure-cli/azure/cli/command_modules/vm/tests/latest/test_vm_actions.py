@@ -373,7 +373,8 @@ class TestActions(unittest.TestCase):
         from azure.cli.core.azclierror import ArgumentUsageError
         with self.assertRaises(ArgumentUsageError) as err:
             _validate_vm_vmss_msi(cmd, np_mock, is_identity_assign=True)
-        self.assertTrue("usage error: please specify --scope when assigning a role to the managed identity"
+        self.assertTrue("usage error: please specify both --role and --scope "
+                        "when assigning a role to the managed identity"
                         in str(err.exception))
 
         # check we set right role id
@@ -661,7 +662,7 @@ class TestActions(unittest.TestCase):
         for test_sku, expected in sku_tests.values():
             if isinstance(expected, dict):
                 # build info dict from expected values.
-                info_dict = {lun: dict(managedDisk={'storageAccountType': None}) for lun in expected if lun != "os"}
+                info_dict = {lun: {"managedDisk": {'storageAccountType': None}} for lun in expected if lun != "os"}
                 if "os" in expected:
                     info_dict["os"] = {}
 
@@ -673,7 +674,10 @@ class TestActions(unittest.TestCase):
                         self.assertEqual(info_dict[lun]['managedDisk']['storageAccountType'], expected[lun])
             elif expected is None:
                 dummy_expected = ["os", 1, 2]
-                info_dict = {lun: dict(managedDisk={'storageAccountType': None}) for lun in dummy_expected if lun != "os"}
+                info_dict = {
+                    lun: {"managedDisk": {'storageAccountType': None}}
+                    for lun in dummy_expected if lun != "os"
+                }
                 if "os" in dummy_expected:
                     info_dict["os"] = {}
 

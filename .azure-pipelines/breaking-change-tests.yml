@@ -20,11 +20,10 @@ jobs:
   - checkout: self
     fetchDepth: 0
     fetchTags: true
-    persistCredentials: true
   - task: UsePythonVersion@0
-    displayName: 'Use Python 3.10'
+    displayName: 'Use Python 3.12'
     inputs:
-      versionSpec: 3.10
+      versionSpec: 3.12
   - template: ${{ variables.Pipeline.Workspace }}/.azure-pipelines/templates/azdev_setup.yml
   - bash: |
       set -ev
@@ -48,13 +47,3 @@ jobs:
       PathtoPublish: '/$(HOME)/.azdev/env_config/mnt/vss/_work/1/s/env/breaking_change_test.json'
       ArtifactName: 'breaking_change_test'
       publishLocation: 'Container'
-#  - bash: |
-#      set -ev
-#      . env/bin/activate
-#      python scripts/ci/breaking_change_test2.py
-#  - task: PublishBuildArtifacts@1
-#    inputs:
-#      # /mnt/vss/.azdev/env_config/mnt/vss/_work/1/s/env/breaking_change_test.json
-#      PathtoPublish: '/$(HOME)/.azdev/env_config/mnt/vss/_work/1/s/env/breaking_change_test.json'
-#      ArtifactName: 'breaking_change_test'
-#      publishLocation: 'Container'

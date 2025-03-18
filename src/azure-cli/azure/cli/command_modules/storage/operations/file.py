@@ -133,7 +133,7 @@ def list_share_files(cmd, client, directory_name=None, timeout=None, exclude_dir
 
     if exclude_dir:
         t_file_properties = cmd.get_models('_models#FileProperties', resource_type=ResourceType.DATA_STORAGE_FILESHARE)
-        return list(f for f in results if isinstance(f, t_file_properties))
+        return [f for f in results if isinstance(f, t_file_properties)]
     return results
 
 
@@ -148,7 +148,7 @@ def storage_file_upload(client, local_file_path, content_settings=None,
     }
     if progress_callback:
         upload_args['progress_hook'] = progress_callback
-    # Because the contents of the uploaded file may be too large, it should be passed into the a stream object,
+    # Because the contents of the uploaded file may be too large, it should be passed into a stream object,
     # upload_file() read file data in batches to avoid OOM problems
     count = os.path.getsize(local_file_path)
     with open(local_file_path, 'rb') as stream:
@@ -159,6 +159,16 @@ def storage_file_upload(client, local_file_path, content_settings=None,
             response['content_md5'] = ''.join(hex(x) for x in response['content_md5'])
 
     return response
+
+
+def _execute_in_parallel(max_workers, fn, args_list):
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    if len(args_list) == 0:
+        return []
+    max_workers = min(max_workers, len(args_list))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(fn, *args) for args in args_list]
+        return list(f.result() for f in as_completed(futures))
 
 
 def storage_file_upload_batch(cmd, client, destination, source, destination_path=None, pattern=None, dryrun=False,
@@ -188,8 +198,6 @@ def storage_file_upload_batch(cmd, client, destination, source, destination_path
             res.append({'File': file, 'Type': guessed_type})
         return res
 
-    # TODO: Performance improvement
-    # 1. Upload files in parallel
     def _upload_action(src, dst2):
         dst2 = normalize_blob_file_path(destination_path, dst2)
         dir_name = os.path.dirname(dst2)
@@ -207,7 +215,9 @@ def storage_file_upload_batch(cmd, client, destination, source, destination_path
         }
         return create_file_url(client, **args)
 
-    return list(_upload_action(src, dst) for src, dst in source_files)
+    # 1. Upload files in parallel
+    # 2. Return the list of uploaded files
+    return _execute_in_parallel(max_connections, _upload_action, source_files)
 
 
 def download_file(client, destination_path=None, timeout=None, max_connections=2, open_mode='wb', **kwargs):
@@ -305,7 +315,7 @@ def storage_file_copy_batch(cmd, client, source_client, share_name=None, destina
 
         # the cache of existing directories in the destination file share. the cache helps to avoid
         # repeatedly create existing directory so as to optimize the performance.
-        existing_dirs = set([])
+        existing_dirs = set()
 
         # pylint: disable=inconsistent-return-statements
         def action_blob_copy(blob_name):
@@ -325,7 +335,7 @@ def storage_file_copy_batch(cmd, client, source_client, share_name=None, destina
 
         # the cache of existing directories in the destination file share. the cache helps to avoid
         # repeatedly create existing directory so as to optimize the performance.
-        existing_dirs = set([])
+        existing_dirs = set()
 
         # pylint: disable=inconsistent-return-statements
         def action_file_copy(file_info):

@@ -163,6 +163,9 @@ def _prepare_client_kwargs_track2(cli_ctx):
     if 'x-ms-client-request-id' in cli_ctx.data['headers']:
         client_kwargs['request_id'] = cli_ctx.data['headers']['x-ms-client-request-id']
 
+    from azure.cli.core.sdk.policies import RecordTelemetryUserAgentPolicy
+    client_kwargs['user_agent_policy'] = RecordTelemetryUserAgentPolicy(**client_kwargs)
+
     # Replace NetworkTraceLoggingPolicy to redact 'Authorization' and 'x-ms-authorization-auxiliary' headers.
     #   NetworkTraceLoggingPolicy: log raw network trace, with all headers.
     from azure.cli.core.sdk.policies import SafeNetworkTraceLoggingPolicy
@@ -193,7 +196,7 @@ def _prepare_mgmt_client_kwargs_track2(cli_ctx, cred):
     # Track 2 currently lacks the ability to take external credentials.
     #   https://github.com/Azure/azure-sdk-for-python/issues/8313
     # As a temporary workaround, manually add external tokens to 'x-ms-authorization-auxiliary' header.
-    #   https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/authenticate-multi-tenant
+    #   https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/authenticate-multi-tenant
     if hasattr(cred, "get_auxiliary_tokens"):
         aux_tokens = cred.get_auxiliary_tokens(*scopes)
         if aux_tokens:
