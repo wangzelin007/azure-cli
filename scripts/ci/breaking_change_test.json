@@ -1,0 +1,17 @@
+{
+    "breaking_change_test": {
+        "Details": [
+            {
+                "TestName": "AzureCLI-BreakingChangeTest",
+                "Details": [
+                    {
+                        "Module": "Non Breaking Changes",
+                        "Status": "Succeeded",
+                        "Content": ""
+                    }
+                ]
+            }
+        ]
+    },
+    "pull_request_number": "8"
+}
